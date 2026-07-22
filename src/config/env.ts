@@ -1,0 +1,4 @@
+export const env = {
+  API_URL: 'https://api-contronde.saditech.ma/api',
+  SOCKET_URL: 'https://api-contronde.saditech.ma',
+};

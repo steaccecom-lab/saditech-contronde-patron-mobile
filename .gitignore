@@ -28,6 +28,10 @@ build/
 .idea
 .gradle
 local.properties
+android/keystore.properties
+*.jks
+*.keystore
+android/app/google-services.json
 *.iml
 *.hprof
 .cxx/
@@ -72,3 +76,19 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Local environment
+.env.development
+.env.production
+
+# Local Gradle and build logs
+.gradle-user-home/
+android/bundle-release.log
+
+# Local environment
+.env.development
+.env.production
+
+# Local Gradle and build logs
+.gradle-user-home/
+android/bundle-release.log
