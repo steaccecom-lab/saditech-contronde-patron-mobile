@@ -9,13 +9,10 @@ import { resetEventDedup } from '../services/eventDedup';
 import { useAuthStore } from '../stores/authStore';
 import type { ScanNotificationMode } from '../types/api';
 import { ErrorView, LoadingView } from '../components/StateViews';
+import { notificationModeLabel } from '../presentation/labels';
 import { colors } from '../theme/colors';
 
-const options: Array<{ label: string; value: ScanNotificationMode }> = [
-  { label: 'Tous les scans', value: 'ALL_SCANS' },
-  { label: 'Seulement les scans hors ordre', value: 'OUT_OF_ORDER_ONLY' },
-  { label: 'Notifications désactivées', value: 'DISABLED' },
-];
+const options: ScanNotificationMode[] = ['ALL_SCANS', 'OUT_OF_ORDER_ONLY', 'DISABLED'];
 
 export function SettingsScreen() {
   const queryClient = useQueryClient();
@@ -50,10 +47,10 @@ export function SettingsScreen() {
       <Text style={styles.title}>Paramètres</Text>
       <Text style={styles.section}>Notifications</Text>
       {options.map((option) => {
-        const selected = query.data.scanNotificationMode === option.value;
+        const selected = query.data.scanNotificationMode === option;
         return (
-          <TouchableOpacity key={option.value} style={[styles.option, selected && styles.selected]} onPress={() => mutation.mutate(option.value)}>
-            <Text style={[styles.optionText, selected && styles.selectedText]}>{option.label}</Text>
+          <TouchableOpacity key={option} style={[styles.option, selected && styles.selected]} onPress={() => mutation.mutate(option)}>
+            <Text style={[styles.optionText, selected && styles.selectedText]}>{notificationModeLabel(option)}</Text>
           </TouchableOpacity>
         );
       })}

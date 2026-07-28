@@ -6,6 +6,7 @@ import { getRoundDetail } from '../services/patronApi';
 import type { RootStackParamList } from '../types/navigation';
 import type { RoundDetail } from '../types/api';
 import { ErrorView, LoadingView } from '../components/StateViews';
+import { checkpointStatusLabel } from '../presentation/labels';
 import { colors } from '../theme/colors';
 import { formatDateTime, formatDuration, statusLabel } from '../utils/format';
 
@@ -44,7 +45,7 @@ export function RoundDetailScreen() {
             <Text style={[styles.badge, { color }]}>{checkpoint.status === 'VALIDATED' ? (checkpoint.isOutOfOrder ? '!' : '✓') : checkpoint.status === 'MISSED' ? '×' : '·'}</Text>
             <View style={styles.checkpointBody}>
               <Text style={styles.checkpointTitle}>{checkpoint.expectedOrder}. {checkpoint.name}</Text>
-              <Text style={styles.meta}>{checkpoint.status} · {formatDateTime(checkpoint.scannedAt)}</Text>
+              <Text style={styles.meta}>{checkpointStatusLabel(checkpoint.status)} · {formatDateTime(checkpoint.scannedAt)}</Text>
             </View>
           </View>
         );
