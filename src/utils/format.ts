@@ -21,14 +21,6 @@ export function formatDuration(seconds: number | null | undefined): string {
 }
 
 export function statusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    PLANNED: 'Planifiée',
-    LATE: 'En retard',
-    STARTED: 'En cours',
-    FINISHED: 'Terminée',
-    MISSED: 'Manquée',
-    CANCELLED: 'Annulée',
-  };
-
-  return labels[status] ?? status;
+  return roundStatusLabel(status);
 }
+import { roundStatusLabel } from '../presentation/labels';
