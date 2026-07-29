@@ -1,5 +1,7 @@
-import Config from 'react-native-config';
 import { createPatronEnvironment } from './environment';
+import {readNativeConfig} from './nativeConfig';
+
+const Config = readNativeConfig();
 
 export const env = createPatronEnvironment(
   {

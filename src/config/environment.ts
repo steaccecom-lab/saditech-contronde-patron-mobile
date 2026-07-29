@@ -16,7 +16,7 @@ const PRODUCTION_HOST = ['api-contronde', 'saditech', 'ma'].join('.');
 
 export function createPatronEnvironment(
   input: EnvironmentInput,
-  options: { allowDevelopmentFallback?: boolean } = {}
+  options: {allowDevelopmentFallback?: boolean} = {},
 ): PatronEnvironment {
   const name = parseEnvironmentName(input.APP_ENV);
   const configuredApiUrl = input.API_URL?.trim();
@@ -27,7 +27,9 @@ export function createPatronEnvironment(
       : '');
 
   if (!apiUrl) {
-    throw new Error(`Configuration Patron invalide : API_URL est obligatoire pour l’environnement ${name}.`);
+    throw new Error(
+      `Configuration Patron invalide : API_URL est obligatoire pour l’environnement ${name}.`,
+    );
   }
 
   const normalizedApiUrl = normalizeHttpUrl(apiUrl, 'API_URL');
@@ -47,7 +49,9 @@ export function deriveSocketUrl(apiUrl: string) {
     : normalized;
 }
 
-function parseEnvironmentName(value: string | undefined): PatronEnvironmentName {
+function parseEnvironmentName(
+  value: string | undefined,
+): PatronEnvironmentName {
   const normalized = value?.trim().toLowerCase();
   if (
     normalized === 'development' ||
@@ -57,29 +61,28 @@ function parseEnvironmentName(value: string | undefined): PatronEnvironmentName 
     return normalized;
   }
 
-  throw new Error('Configuration Patron invalide : APP_ENV doit valoir development, staging ou production.');
+  throw new Error(
+    'Configuration Patron invalide : APP_ENV doit valoir development, staging ou production.',
+  );
 }
 
 function normalizeHttpUrl(value: string, variableName: string) {
   const normalized = value.trim().replace(/\/+$/, '');
-  let parsed: URL;
-
-  try {
-    parsed = new URL(normalized);
-  } catch {
-    throw new Error(`Configuration Patron invalide : ${variableName} doit être une URL HTTP(S) valide.`);
+  if (!/^https?:\/\//i.test(normalized)) {
+    throw new Error(
+      `Configuration Patron invalide : ${variableName} doit utiliser HTTP ou HTTPS.`,
+    );
   }
 
-  if (!['http:', 'https:'].includes(parsed.protocol)) {
-    throw new Error(`Configuration Patron invalide : ${variableName} doit utiliser HTTP ou HTTPS.`);
-  }
-
+  parseHttpUrl(normalized, variableName);
   return normalized;
 }
 
-function validateEnvironmentTarget(name: PatronEnvironmentName, apiUrl: string) {
-  const parsed = new URL(apiUrl);
-  const hostname = parsed.hostname.toLowerCase();
+function validateEnvironmentTarget(
+  name: PatronEnvironmentName,
+  apiUrl: string,
+) {
+  const {hostname} = parseHttpUrl(apiUrl, 'API_URL');
   const isLocal =
     hostname === 'localhost' ||
     hostname === '127.0.0.1' ||
@@ -91,10 +94,72 @@ function validateEnvironmentTarget(name: PatronEnvironmentName, apiUrl: string) 
     hostname.includes('recette');
 
   if (name === 'production' && (!isProduction || isLocal || looksLikeStaging)) {
-    throw new Error('Configuration Patron invalide : un build production doit utiliser le serveur de production.');
+    throw new Error(
+      'Configuration Patron invalide : un build production doit utiliser le serveur de production.',
+    );
   }
 
   if (name === 'staging' && isProduction) {
-    throw new Error('Configuration Patron invalide : un build de recette ne peut pas utiliser la production.');
+    throw new Error(
+      'Configuration Patron invalide : un build de recette ne peut pas utiliser la production.',
+    );
   }
+}
+
+function parseHttpUrl(value: string, variableName: string) {
+  const match = /^(https?):\/\/([^/?#]+)(\/[^?#]*)?$/i.exec(value);
+  if (!match) {
+    throwInvalidUrl(variableName);
+  }
+
+  const authority = match[2];
+  const authorityMatch = /^([a-z0-9.-]+)(?::([0-9]{1,5}))?$/i.exec(authority);
+  if (!authorityMatch || !isValidHostname(authorityMatch[1])) {
+    throwInvalidUrl(variableName);
+  }
+
+  const port = authorityMatch[2]
+    ? Number.parseInt(authorityMatch[2], 10)
+    : undefined;
+  if (port !== undefined && (port < 1 || port > 65535)) {
+    throw new Error(
+      `Configuration Patron invalide : ${variableName} contient un port invalide.`,
+    );
+  }
+
+  return {
+    protocol: match[1].toLowerCase(),
+    hostname: authorityMatch[1].toLowerCase(),
+  };
+}
+
+function isValidHostname(hostname: string) {
+  if (hostname.toLowerCase() === 'localhost') {
+    return true;
+  }
+
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+    return hostname
+      .split('.')
+      .every(part => Number.parseInt(part, 10) <= 255);
+  }
+
+  return (
+    hostname.length <= 253 &&
+    hostname.includes('.') &&
+    hostname
+      .split('.')
+      .every(
+        label =>
+          label.length > 0 &&
+          label.length <= 63 &&
+          /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i.test(label),
+      )
+  );
+}
+
+function throwInvalidUrl(variableName: string): never {
+  throw new Error(
+    `Configuration Patron invalide : ${variableName} doit être une URL HTTP(S) valide.`,
+  );
 }

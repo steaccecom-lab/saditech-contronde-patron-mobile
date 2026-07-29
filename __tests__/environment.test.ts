@@ -2,6 +2,8 @@ import {
   createPatronEnvironment,
   deriveSocketUrl,
 } from '../src/config/environment';
+import fs from 'fs';
+import path from 'path';
 
 const productionApiUrl = `https://${['api-contronde', 'saditech', 'ma'].join('.')}/api`;
 
@@ -63,6 +65,53 @@ describe('Patron environment configuration', () => {
       .toBe('https://staging.example.invalid');
     expect(deriveSocketUrl('https://staging.example.invalid/gateway'))
       .toBe('https://staging.example.invalid/gateway');
+  });
+
+  it('accepts an URL with a port and derives its Socket.IO origin', () => {
+    const result = createPatronEnvironment({
+      APP_ENV: 'staging',
+      API_URL: 'https://staging.example.invalid:8443/api',
+    });
+
+    expect(result.API_URL).toBe(
+      'https://staging.example.invalid:8443/api',
+    );
+    expect(result.SOCKET_URL).toBe(
+      'https://staging.example.invalid:8443',
+    );
+  });
+
+  it('keeps a path other than the final /api suffix for Socket.IO', () => {
+    expect(
+      deriveSocketUrl('https://staging.example.invalid/gateway/api-v2/'),
+    ).toBe('https://staging.example.invalid/gateway/api-v2');
+  });
+
+  it.each([
+    'https://',
+    'https://bad host/api',
+    'https://example.test:70000/api',
+    'https://example.test/api?token=secret',
+    'https://user@example.test/api',
+  ])('rejects the invalid URL %s', API_URL => {
+    expect(() =>
+      createPatronEnvironment({
+        APP_ENV: 'staging',
+        API_URL,
+      }),
+    ).toThrow('Configuration Patron invalide');
+  });
+
+  it('does not use the global Web URL implementation', () => {
+    const environmentSource = fs.readFileSync(
+      path.join(__dirname, '../src/config/environment.ts'),
+      'utf8',
+    );
+
+    expect(environmentSource).not.toMatch(/\bnew\s+URL\s*\(/);
+    expect(environmentSource).not.toMatch(
+      /\bURL\.(protocol|hostname|host|pathname)\b/,
+    );
   });
 
   it('never falls back silently to production', () => {

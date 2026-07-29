@@ -1,5 +1,16 @@
 /* global jest */
 
+const {NativeModules} = require('react-native');
+
+NativeModules.RNCConfigModule = {
+  getConfig: () => ({
+    config: {
+      APP_ENV: 'development',
+      API_URL: 'http://10.0.2.2:3001/api',
+    },
+  }),
+};
+
 jest.mock('react-native-keychain', () => ({
   setGenericPassword: jest.fn(),
   getGenericPassword: jest.fn(),
@@ -17,8 +28,3 @@ jest.mock('@react-native-firebase/messaging', () => () => ({
 }));
 
 jest.mock('@react-native-firebase/app', () => ({}));
-
-jest.mock('react-native-config', () => ({
-  APP_ENV: 'development',
-  API_URL: 'http://10.0.2.2:3001/api',
-}));
