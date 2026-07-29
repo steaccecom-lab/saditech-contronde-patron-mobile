@@ -77,17 +77,9 @@ yarn-error.log
 !.yarn/sdks
 !.yarn/versions
 
-# Local environment
-.env.development
-.env.production
-
-# Local Gradle and build logs
-.gradle-user-home/
-android/bundle-release.log
-
-# Local environment
-.env.development
-.env.production
+# Local environment overrides containing secrets must use the .local suffix.
+.env.*.local
+.env.local
 
 # Local Gradle and build logs
 .gradle-user-home/

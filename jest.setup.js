@@ -17,3 +17,8 @@ jest.mock('@react-native-firebase/messaging', () => () => ({
 }));
 
 jest.mock('@react-native-firebase/app', () => ({}));
+
+jest.mock('react-native-config', () => ({
+  APP_ENV: 'development',
+  API_URL: 'http://10.0.2.2:3001/api',
+}));
