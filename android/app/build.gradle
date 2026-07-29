@@ -93,8 +93,8 @@ android {
         applicationId "com.controndepatron"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.0.1"
     }
     flavorDimensions "environment"
     productFlavors {
@@ -112,9 +112,36 @@ android {
     }
     def keystoreProperties = new Properties()
     def keystorePropertiesFile = rootProject.file("keystore.properties")
+    def requiredSigningProperties = ["storeFile", "storePassword", "keyAlias", "keyPassword"]
+    def productionReleaseRequested = gradle.startParameter.taskNames.any {
+        it.toLowerCase().contains("productionrelease")
+    }
 
     if (keystorePropertiesFile.exists()) {
         keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+    }
+
+    def missingSigningProperties = requiredSigningProperties.findAll {
+        !keystoreProperties[it]?.toString()?.trim()
+    }
+    def releaseStoreFile = keystoreProperties["storeFile"]?.toString()?.trim()
+    def releaseStoreExists = releaseStoreFile ? file(releaseStoreFile).exists() : false
+    def releaseSigningComplete =
+        keystorePropertiesFile.exists() &&
+        missingSigningProperties.isEmpty() &&
+        releaseStoreExists
+
+    if (productionReleaseRequested && !releaseSigningComplete) {
+        throw new GradleException(
+            "Signature Patron officielle manquante ou incomplète. " +
+            "Configurez android/keystore.properties avec storeFile, storePassword, keyAlias et keyPassword."
+        )
+    }
+
+    if (productionReleaseRequested && keystoreProperties["keyAlias"] != "contronde-patron") {
+        throw new GradleException(
+            "Alias de signature Patron invalide : utilisez l’alias officiel attendu."
+        )
     }
 
     signingConfigs {
@@ -125,8 +152,8 @@ android {
             keyPassword 'android'
         }
         release {
-            if (keystorePropertiesFile.exists()) {
-                storeFile file(keystoreProperties["storeFile"])
+            if (releaseSigningComplete) {
+                storeFile file(releaseStoreFile)
                 storePassword keystoreProperties["storePassword"]
                 keyAlias keystoreProperties["keyAlias"]
                 keyPassword keystoreProperties["keyPassword"]
@@ -138,7 +165,7 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
