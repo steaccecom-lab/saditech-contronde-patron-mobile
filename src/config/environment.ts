@@ -13,6 +13,7 @@ export type PatronEnvironment = {
 
 const DEVELOPMENT_API_URL = 'http://10.0.2.2:3001/api';
 const PRODUCTION_HOST = ['api-contronde', 'saditech', 'ma'].join('.');
+const PUBLIC_API_URL = `https://${PRODUCTION_HOST}/api`;
 
 export function createPatronEnvironment(
   input: EnvironmentInput,
@@ -99,9 +100,9 @@ function validateEnvironmentTarget(
     );
   }
 
-  if (name === 'staging' && isProduction) {
+  if (name === 'staging' && apiUrl !== PUBLIC_API_URL) {
     throw new Error(
-      'Configuration Patron invalide : un build de recette ne peut pas utiliser la production.',
+      'Configuration Patron invalide : un build de recette doit utiliser l\u2019API publique autorisée en HTTPS.',
     );
   }
 }

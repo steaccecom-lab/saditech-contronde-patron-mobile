@@ -20,10 +20,10 @@ describe('Patron environment configuration', () => {
   it('trims whitespace and removes trailing slashes', () => {
     const result = createPatronEnvironment({
       APP_ENV: 'staging',
-      API_URL: '  https://staging.example.invalid/api///  ',
+      API_URL: `  ${productionApiUrl}///  `,
     });
 
-    expect(result.API_URL).toBe('https://staging.example.invalid/api');
+    expect(result.API_URL).toBe(productionApiUrl);
   });
 
   it.each(['staging', 'production'] as const)(
@@ -41,11 +41,29 @@ describe('Patron environment configuration', () => {
     })).toThrow('doit utiliser HTTP ou HTTPS');
   });
 
-  it('prevents staging from targeting production', () => {
-    expect(() => createPatronEnvironment({
+  it('allows staging to target the explicitly approved public API', () => {
+    expect(createPatronEnvironment({
       APP_ENV: 'staging',
       API_URL: productionApiUrl,
-    })).toThrow('un build de recette ne peut pas utiliser la production');
+    }).API_URL).toBe(productionApiUrl);
+  });
+
+  it.each([
+    'http://api-contronde.saditech.ma/api',
+    'http://localhost:3001/api',
+    'https://localhost/api',
+    'http://10.0.2.2:3001/api',
+    'https://10.0.2.2/api',
+    'https://staging.example.invalid/api',
+    'https://api-contronde.saditech.ma/api/api',
+    'https://api-contronde.saditech.ma',
+  ])('prevents staging from targeting %s', (API_URL) => {
+    expect(() => createPatronEnvironment({
+      APP_ENV: 'staging',
+      API_URL,
+    })).toThrow(
+      'un build de recette doit utiliser l\u2019API publique autorisée en HTTPS',
+    );
   });
 
   it.each([
@@ -69,7 +87,7 @@ describe('Patron environment configuration', () => {
 
   it('accepts an URL with a port and derives its Socket.IO origin', () => {
     const result = createPatronEnvironment({
-      APP_ENV: 'staging',
+      APP_ENV: 'development',
       API_URL: 'https://staging.example.invalid:8443/api',
     });
 
@@ -127,16 +145,33 @@ describe('Patron environment configuration', () => {
     )).toThrow('API_URL est obligatoire');
   });
 
-  it('keeps the approved production URL valid only for production', () => {
+  it('keeps the approved public URL valid for production and staging', () => {
     expect(createPatronEnvironment({
       APP_ENV: 'production',
       API_URL: productionApiUrl,
     }).API_URL).toBe(productionApiUrl);
 
-    expect(() => createPatronEnvironment({
+    expect(createPatronEnvironment({
       APP_ENV: 'staging',
       API_URL: productionApiUrl,
-    })).toThrow();
+    }).API_URL).toBe(productionApiUrl);
+  });
+
+  it('rejects an unknown profile', () => {
+    expect(() => createPatronEnvironment({
+      APP_ENV: 'qa',
+      API_URL: productionApiUrl,
+    })).toThrow('APP_ENV doit valoir development, staging ou production');
+  });
+
+  it('rejects a missing environment variable clearly', () => {
+    expect(() => createPatronEnvironment({
+      API_URL: productionApiUrl,
+    })).toThrow('APP_ENV doit valoir development, staging ou production');
+
+    expect(() => createPatronEnvironment({
+      APP_ENV: 'staging',
+    })).toThrow('API_URL est obligatoire');
   });
 
   it('does not log configuration values or errors', () => {
