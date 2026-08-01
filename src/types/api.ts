@@ -75,6 +75,13 @@ export type RoundItem = {
   round: { id: string; name: string };
 };
 
+export type SiteItem = {
+  id: string;
+  name: string;
+  address?: string | null;
+  status: string;
+};
+
 export type RoundsResponse = {
   items: RoundItem[];
   pagination: Pagination;
@@ -122,3 +129,16 @@ export type AgentsResponse = {
   items: AgentItem[];
   pagination: Pagination;
 };
+
+export type NotificationItem = {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  readAt: string | null;
+  createdAt: string;
+  scheduledRoundId: string | null;
+  siteId: string | null;
+};
+
+export type NotificationsResponse = { items: NotificationItem[]; pagination: Pagination };

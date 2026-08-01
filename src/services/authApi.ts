@@ -2,6 +2,7 @@ import { http } from './http';
 import { clearTokens, getTokens, saveTokens } from './secureTokenStorage';
 import type { AuthResponse, User } from '../types/api';
 import { useAuthStore } from '../stores/authStore';
+import { revokeCurrentDevice } from './mobileDevicesApi';
 
 const allowedRoles = new Set(['COMPANY_ADMIN', 'SUPERVISOR']);
 
@@ -49,6 +50,7 @@ export async function restoreSession(): Promise<User | null> {
 }
 
 export async function logout(refreshToken: string | null): Promise<void> {
+  await revokeCurrentDevice().catch(() => undefined);
   if (refreshToken) {
     await http.post('/auth/logout', { refreshToken }).catch(() => undefined);
   }

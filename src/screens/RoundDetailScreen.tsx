@@ -6,7 +6,7 @@ import { getRoundDetail } from '../services/patronApi';
 import type { RootStackParamList } from '../types/navigation';
 import type { RoundDetail } from '../types/api';
 import { ErrorView, LoadingView } from '../components/StateViews';
-import { checkpointStatusLabel } from '../presentation/labels';
+import { anomalyTypeLabel, checkpointStatusLabel } from '../presentation/labels';
 import { colors } from '../theme/colors';
 import { formatDateTime, formatDuration, statusLabel } from '../utils/format';
 
@@ -42,7 +42,7 @@ export function RoundDetailScreen() {
         const color = checkpoint.status === 'MISSED' ? colors.danger : checkpoint.isOutOfOrder ? colors.warning : checkpoint.status === 'VALIDATED' ? colors.success : colors.muted;
         return (
           <View key={checkpoint.checkpointId} style={styles.checkpoint}>
-            <Text style={[styles.badge, { color }]}>{checkpoint.status === 'VALIDATED' ? (checkpoint.isOutOfOrder ? '!' : '✓') : checkpoint.status === 'MISSED' ? '×' : '·'}</Text>
+            <Text accessibilityLabel={checkpoint.isOutOfOrder ? 'Point validé hors ordre' : checkpoint.status === 'VALIDATED' ? 'Point validé' : checkpointStatusLabel(checkpoint.status)} style={[styles.badge, { color }]}>{checkpoint.status === 'VALIDATED' ? (checkpoint.isOutOfOrder ? '!' : '✓') : checkpoint.status === 'MISSED' ? '×' : '·'}</Text>
             <View style={styles.checkpointBody}>
               <Text style={styles.checkpointTitle}>{checkpoint.expectedOrder}. {checkpoint.name}</Text>
               <Text style={styles.meta}>{checkpointStatusLabel(checkpoint.status)} · {formatDateTime(checkpoint.scannedAt)}</Text>
@@ -53,7 +53,7 @@ export function RoundDetailScreen() {
       <Text style={styles.section}>Anomalies</Text>
       {round.anomalies.length === 0 ? <Text style={styles.meta}>Aucune anomalie.</Text> : round.anomalies.map((anomaly: RoundDetail['anomalies'][number]) => (
         <View key={anomaly.id} style={styles.anomaly}>
-          <Text style={styles.line}>{anomaly.type}</Text>
+          <Text style={styles.line}>{anomalyTypeLabel(anomaly.type)}</Text>
           <Text style={styles.meta}>{anomaly.checkpointName ?? 'Ronde'} · {formatDateTime(anomaly.createdAt)}</Text>
         </View>
       ))}

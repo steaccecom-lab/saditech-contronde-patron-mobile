@@ -6,6 +6,7 @@ import type {
   RoundDetail,
   RoundsResponse,
   RoundStatus,
+  SiteItem,
 } from '../types/api';
 
 export type ListRoundsParams = {
@@ -43,4 +44,9 @@ export async function getAgents(params: { page?: number; limit?: number; period?
 export async function getAgentRounds(agentId: string, params: ListRoundsParams) {
   const response = await http.get<RoundsResponse>(`/patron/agents/${agentId}/rounds`, { params });
   return response.data;
+}
+
+export async function getSites() {
+  const response = await http.get<{ sites: SiteItem[] }>('/sites', { params: { status: 'ACTIVE' } });
+  return response.data.sites;
 }

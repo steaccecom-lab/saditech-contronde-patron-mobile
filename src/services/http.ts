@@ -2,6 +2,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { env } from '../config/env';
 import { clearTokens, getTokens, saveTokens } from './secureTokenStorage';
 import { useAuthStore } from '../stores/authStore';
+import { parseApiError } from './apiError';
 
 type RetriableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
 
@@ -72,14 +73,8 @@ async function doRefresh(): Promise<string | null> {
   }
 }
 
-function translateError(error: AxiosError): Error {
-  const message = (error.response?.data as { error?: { message?: string } } | undefined)?.error?.message;
-  if (message?.includes('Insufficient')) {
-    return new Error('Accès refusé.');
-  }
-  if (message?.includes('Network') || error.code === 'ECONNABORTED') {
-    return new Error('Connexion impossible. Vérifiez le réseau.');
-  }
-
-  return new Error(message && !message.includes('Prisma') ? message : 'Une erreur est survenue.');
+function translateError(error: AxiosError): AxiosError {
+  const info = parseApiError(error);
+  error.message = info.messages.join('\n');
+  return error;
 }

@@ -18,6 +18,8 @@ export async function setupFirebaseMessaging(queryClient: QueryClient): Promise<
     if (shouldHandleEvent(String(type), eventId ? String(eventId) : undefined)) {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['rounds'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notificationUnreadCount'] });
     }
   });
 

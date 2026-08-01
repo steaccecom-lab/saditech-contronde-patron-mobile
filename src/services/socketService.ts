@@ -35,6 +35,8 @@ export function connectSocket(queryClient: QueryClient): void {
     queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     queryClient.invalidateQueries({ queryKey: ['rounds'] });
     queryClient.invalidateQueries({ queryKey: ['agents'] });
+    queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    queryClient.invalidateQueries({ queryKey: ['notificationUnreadCount'] });
     if (payload.scheduledRoundId) {
       queryClient.invalidateQueries({ queryKey: ['roundDetail', payload.scheduledRoundId] });
     }
@@ -47,6 +49,8 @@ export function connectSocket(queryClient: QueryClient): void {
     queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     queryClient.invalidateQueries({ queryKey: ['rounds'] });
     queryClient.invalidateQueries({ queryKey: ['agents'] });
+    queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    queryClient.invalidateQueries({ queryKey: ['notificationUnreadCount'] });
     if (payload.scheduledRoundId) {
       queryClient.invalidateQueries({ queryKey: ['roundDetail', payload.scheduledRoundId] });
     }

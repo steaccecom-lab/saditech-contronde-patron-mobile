@@ -19,7 +19,9 @@ export function RoundCard({ round, onPress }: { round: RoundItem; onPress: () =>
       <Text style={styles.progress}>
         {round.progress.validated}/{round.progress.total} points
         {round.outOfOrderCount > 0 ? ` · ${round.outOfOrderCount} hors ordre` : ''}
+        {round.missedCheckpointCount > 0 ? ` · ${round.missedCheckpointCount} manqué${round.missedCheckpointCount > 1 ? 's' : ''}` : ''}
       </Text>
+      {round.status === 'LATE' ? <Text style={styles.warning}>Retard signalé</Text> : null}
     </TouchableOpacity>
   );
 }
@@ -57,5 +59,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     marginTop: 8,
+  },
+  warning: {
+    color: colors.warning,
+    fontWeight: '700',
+    marginTop: 5,
   },
 });

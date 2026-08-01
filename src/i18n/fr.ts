@@ -24,4 +24,12 @@ export const fr = {
     OUT_OF_ORDER_ONLY: 'Seulement les scans hors ordre',
     DISABLED: 'Notifications désactivées',
   },
+  anomalyTypes: {
+    OUT_OF_ORDER: 'Point scanné hors ordre',
+    DUPLICATE_SCAN: 'Scan dupliqué',
+    INVALID_CHECKPOINT: 'Point de contrôle invalide',
+    MISSED_CHECKPOINT: 'Point de contrôle manqué',
+    LATE_START: 'Démarrage en retard',
+    MISSED_ROUND: 'Ronde manquée',
+  },
 } as const;

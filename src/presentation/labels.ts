@@ -21,3 +21,7 @@ export function checkpointStatusLabel(value: string): string {
 export function notificationModeLabel(value: string): string {
   return labelFrom(fr.notificationModes, value, fr.fallback.notificationMode);
 }
+
+export function anomalyTypeLabel(value: string): string {
+  return labelFrom(fr.anomalyTypes, value, fr.fallback.value);
+}
