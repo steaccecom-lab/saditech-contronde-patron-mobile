@@ -14,6 +14,13 @@ const signingExample = fs.readFileSync(
   path.join(projectRoot, 'android/keystore.properties.example'),
   'utf8',
 );
+const mainApplication = fs.readFileSync(
+  path.join(
+    projectRoot,
+    'android/app/src/main/java/com/controndepatron/MainApplication.kt',
+  ),
+  'utf8',
+);
 
 describe('signature Android officielle Patron', () => {
   it('ne permet aucun fallback de release vers la signature debug', () => {
@@ -36,9 +43,9 @@ describe('signature Android officielle Patron', () => {
     );
   });
 
-  it('déclare la version officielle 1.0.1 avec versionCode 2', () => {
-    expect(buildGradle).toMatch(/\bversionCode\s+2\b/);
-    expect(buildGradle).toMatch(/\bversionName\s+"1\.0\.1"/);
+  it('déclare la version 1.0.2 avec versionCode 3', () => {
+    expect(buildGradle).toMatch(/\bversionCode\s+3\b/);
+    expect(buildGradle).toMatch(/\bversionName\s+"1\.0\.2"/);
   });
 
   it('ignore les fichiers sensibles mais conserve un exemple sans secret', () => {
@@ -58,7 +65,23 @@ describe('signature Android officielle Patron', () => {
       /buildTypes\s*\{[\s\S]*?debug\s*\{[\s\S]*?signingConfig signingConfigs\.debug/,
     );
     expect(buildGradle).toContain(
-      'debuggableVariants = ["developmentDebug", "stagingDebug"]',
+      'debuggableVariants = ["developmentDebug"]',
     );
+  });
+
+  it('embarque le bundle staging tout en gardant Metro pour development', () => {
+    expect(buildGradle).toContain(
+      'debuggableVariants = ["developmentDebug"]',
+    );
+    expect(buildGradle).not.toMatch(
+      /debuggableVariants\s*=\s*\[[^\]]*stagingDebug/,
+    );
+    expect(mainApplication).toContain(
+      'BuildConfig.DEBUG && BuildConfig.APP_ENV == "development"',
+    );
+  });
+
+  it('charge stagingDebug depuis .env.staging', () => {
+    expect(buildGradle).toContain('stagingdebug: ".env.staging"');
   });
 });

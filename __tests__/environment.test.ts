@@ -132,17 +132,16 @@ describe('Patron environment configuration', () => {
     );
   });
 
-  it('never falls back silently to production', () => {
-    const development = createPatronEnvironment(
-      { APP_ENV: 'development', API_URL: '' },
-      { allowDevelopmentFallback: true }
-    );
-    expect(development.API_URL).toBe('http://10.0.2.2:3001/api');
+  it('never falls back silently when API_URL is missing', () => {
+    expect(() => createPatronEnvironment({
+      APP_ENV: 'development',
+      API_URL: '',
+    })).toThrow('API_URL est obligatoire');
 
-    expect(() => createPatronEnvironment(
-      { APP_ENV: 'production', API_URL: '' },
-      { allowDevelopmentFallback: true }
-    )).toThrow('API_URL est obligatoire');
+    expect(() => createPatronEnvironment({
+      APP_ENV: 'production',
+      API_URL: '',
+    })).toThrow('API_URL est obligatoire');
   });
 
   it('keeps the approved public URL valid for production and staging', () => {

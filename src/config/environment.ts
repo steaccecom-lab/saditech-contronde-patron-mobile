@@ -11,21 +11,15 @@ export type PatronEnvironment = {
   SOCKET_URL: string;
 };
 
-const DEVELOPMENT_API_URL = 'http://10.0.2.2:3001/api';
 const PRODUCTION_HOST = ['api-contronde', 'saditech', 'ma'].join('.');
 const PUBLIC_API_URL = `https://${PRODUCTION_HOST}/api`;
 
 export function createPatronEnvironment(
   input: EnvironmentInput,
-  options: {allowDevelopmentFallback?: boolean} = {},
 ): PatronEnvironment {
   const name = parseEnvironmentName(input.APP_ENV);
   const configuredApiUrl = input.API_URL?.trim();
-  const apiUrl =
-    configuredApiUrl ||
-    (name === 'development' && options.allowDevelopmentFallback
-      ? DEVELOPMENT_API_URL
-      : '');
+  const apiUrl = configuredApiUrl || '';
 
   if (!apiUrl) {
     throw new Error(
