@@ -12,6 +12,10 @@ describe('navigation superviseur', () => {
   const socket = readSource('src/services/socketService.ts');
   const mobileDevices = readSource('src/services/mobileDevicesApi.ts');
   const notificationsApi = readSource('src/services/notificationsApi.ts');
+  const authApi = readSource('src/services/authApi.ts');
+  const http = readSource('src/services/http.ts');
+  const stateViews = readSource('src/components/StateViews.tsx');
+  const authStore = readSource('src/stores/authStore.ts');
 
   it('retire Historique et Alertes tout en conservant l’ordre des autres onglets', () => {
     expect(navigator).not.toContain('name="History"');
@@ -60,5 +64,31 @@ describe('navigation superviseur', () => {
     expect(socket).toContain("socket.on('patron.round.late'");
     expect(socket).toContain("socket.on('patron.round.missed'");
     expect(notificationsApi).toContain("http.get<NotificationsResponse>('/notifications'");
+  });
+
+  it('affiche des états explicites et actualisables pour les rondes', () => {
+    for (const message of [
+      'Chargement des rondes',
+      'Aucune ronde pour cette période.',
+      'Aucun site ne vous est actuellement affecté. Contactez votre administrateur.',
+      'Aucune ronde disponible pour votre périmètre.',
+      "Vous n'avez pas l'autorisation de consulter ces rondes.",
+    ]) {
+      expect(rounds).toContain(message);
+    }
+    expect(stateViews).toContain('Actualiser');
+    expect(rounds).toContain('enabled: Boolean(');
+    expect(rounds).toContain('initialPageParam: 1');
+    expect(rounds).toContain('pagination.page + 1');
+  });
+
+  it('purge le cache privé au changement ou à la perte de session', () => {
+    expect(authApi.match(/clearPrivateQueryCache\(\)/g)).toHaveLength(3);
+    expect(authApi.indexOf('updateAccessToken(response.data.accessToken')).toBeLessThan(
+      authApi.indexOf('const me = await currentUser()'),
+    );
+    expect(http).toContain('clearPrivateQueryCache()');
+    expect(navigator).toContain("queryKey: ['rounds']");
+    expect(authStore).toContain('pendingRoundId: null');
   });
 });

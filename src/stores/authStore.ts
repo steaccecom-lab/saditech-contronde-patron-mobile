@@ -20,6 +20,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   setSession: (accessToken, refreshToken, user) => set({ accessToken, refreshToken, user }),
   updateAccessToken: (accessToken, refreshToken) =>
     set((state) => ({ accessToken, refreshToken: refreshToken ?? state.refreshToken })),
-  clearSession: () => set({ accessToken: null, refreshToken: null, user: null }),
+  clearSession: () =>
+    set({accessToken: null, refreshToken: null, user: null, pendingRoundId: null}),
   setPendingRoundId: (pendingRoundId) => set({ pendingRoundId }),
 }));

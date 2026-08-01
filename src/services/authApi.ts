@@ -3,6 +3,7 @@ import { clearTokens, getTokens, saveTokens } from './secureTokenStorage';
 import type { AuthResponse, User } from '../types/api';
 import { useAuthStore } from '../stores/authStore';
 import { revokeCurrentDevice } from './mobileDevicesApi';
+import {clearPrivateQueryCache} from '../privateQueryCache';
 
 const allowedRoles = new Set(['COMPANY_ADMIN', 'SUPERVISOR']);
 
@@ -12,6 +13,10 @@ export async function signIn(email: string, password: string): Promise<User> {
     accessToken: response.data.accessToken,
     refreshToken: response.data.refreshToken,
   });
+  clearPrivateQueryCache();
+  useAuthStore
+    .getState()
+    .updateAccessToken(response.data.accessToken, response.data.refreshToken);
   const me = await currentUser();
 
   if (!allowedRoles.has(me.roleType)) {
@@ -41,6 +46,7 @@ export async function restoreSession(): Promise<User | null> {
       await signOutLocally();
       throw new Error('Cette application est réservée aux responsables et superviseurs.');
     }
+    clearPrivateQueryCache();
     useAuthStore.getState().setSession(tokens.accessToken, tokens.refreshToken, user);
     return user;
   } catch {
@@ -59,5 +65,6 @@ export async function logout(refreshToken: string | null): Promise<void> {
 
 export async function signOutLocally(): Promise<void> {
   await clearTokens();
+  clearPrivateQueryCache();
   useAuthStore.getState().clearSession();
 }

@@ -11,10 +11,15 @@ export function LoadingView({ label = 'Chargement...' }: { label?: string }) {
   );
 }
 
-export function EmptyView({ label }: { label: string }) {
+export function EmptyView({label, onRefresh}: {label: string; onRefresh?: () => void}) {
   return (
     <View style={styles.center}>
       <Text style={styles.text}>{label}</Text>
+      {onRefresh ? (
+        <TouchableOpacity accessibilityRole="button" style={styles.button} onPress={onRefresh}>
+          <Text style={styles.buttonText}>Actualiser</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }

@@ -83,6 +83,9 @@ export function AppNavigator() {
     }
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] }).catch(() => undefined);
+        queryClient.invalidateQueries({ queryKey: ['rounds'] }).catch(() => undefined);
+        queryClient.invalidateQueries({ queryKey: ['agents'] }).catch(() => undefined);
         queryClient.invalidateQueries({ queryKey: ['notifications'] }).catch(() => undefined);
         queryClient.invalidateQueries({ queryKey: ['notificationUnreadCount'] }).catch(() => undefined);
       }

@@ -43,9 +43,9 @@ describe('signature Android officielle Patron', () => {
     );
   });
 
-  it('déclare la version 1.0.3 avec versionCode 4', () => {
-    expect(buildGradle).toMatch(/\bversionCode\s+4\b/);
-    expect(buildGradle).toMatch(/\bversionName\s+"1\.0\.3"/);
+  it('déclare la version 1.0.4 avec versionCode 5', () => {
+    expect(buildGradle).toMatch(/\bversionCode\s+5\b/);
+    expect(buildGradle).toMatch(/\bversionName\s+"1\.0\.4"/);
   });
 
   it('ignore les fichiers sensibles mais conserve un exemple sans secret', () => {

@@ -3,6 +3,7 @@ import { env } from '../config/env';
 import { clearTokens, getTokens, saveTokens } from './secureTokenStorage';
 import { useAuthStore } from '../stores/authStore';
 import { parseApiError } from './apiError';
+import {clearPrivateQueryCache} from '../privateQueryCache';
 
 type RetriableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
 
@@ -35,6 +36,7 @@ http.interceptors.response.use(
 
     if (!token) {
       await clearTokens();
+      clearPrivateQueryCache();
       useAuthStore.getState().clearSession();
       throw translateError(error);
     }
