@@ -1,3 +1,4 @@
+import {formatPlannedDateTime} from '../utils/format';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
@@ -29,7 +30,7 @@ export function RoundDetailScreen() {
       <Text style={styles.meta}>{round.site.name} · {round.agent?.name ?? 'Agent non assigné'}</Text>
       <View style={styles.card}>
         <Text style={styles.line}>Statut: {statusLabel(round.status)}</Text>
-        <Text style={styles.line}>Prévue: {formatDateTime(round.plannedStartAt)}</Text>
+        <Text style={styles.line}>Prévue: {formatPlannedDateTime(round.plannedStartAt)}</Text>
         <Text style={styles.line}>Début: {formatDateTime(round.startedAt)}</Text>
         <Text style={styles.line}>Fin: {formatDateTime(round.finishedAt)}</Text>
         <Text style={styles.line}>Durée: {formatDuration(round.durationSeconds)}</Text>

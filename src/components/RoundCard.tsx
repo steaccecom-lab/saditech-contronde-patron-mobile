@@ -1,8 +1,9 @@
+import {formatPlannedDateTime} from '../utils/format';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { RoundItem } from '../types/api';
 import { colors } from '../theme/colors';
-import { formatDateTime, statusLabel } from '../utils/format';
+import { statusLabel } from '../utils/format';
 
 export function RoundCard({ round, onPress }: { round: RoundItem; onPress: () => void }) {
   const tone = round.status === 'FINISHED' ? colors.success : round.status === 'MISSED' ? colors.danger : round.status === 'LATE' ? colors.warning : colors.info;
@@ -15,7 +16,7 @@ export function RoundCard({ round, onPress }: { round: RoundItem; onPress: () =>
       </View>
       <Text style={styles.meta}>{round.site.name}</Text>
       <Text style={styles.meta}>{round.agent?.name ?? 'Agent non assigné'}</Text>
-      <Text style={styles.meta}>Prévue: {formatDateTime(round.plannedStartAt)}</Text>
+      <Text style={styles.meta}>Prévue: {formatPlannedDateTime(round.plannedStartAt)}</Text>
       <Text style={styles.progress}>
         {round.progress.validated}/{round.progress.total} points
         {round.outOfOrderCount > 0 ? ` · ${round.outOfOrderCount} hors ordre` : ''}

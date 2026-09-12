@@ -1,3 +1,4 @@
+import {formatPlannedDateTime} from '../utils/format';
 import React, { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -7,7 +8,7 @@ import { getAgents } from '../services/patronApi';
 import type { RootStackParamList } from '../types/navigation';
 import { EmptyView, ErrorView, LoadingView } from '../components/StateViews';
 import { colors } from '../theme/colors';
-import { formatDateTime, statusLabel } from '../utils/format';
+import { statusLabel } from '../utils/format';
 
 export function AgentsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -44,7 +45,7 @@ export function AgentsScreen() {
             {item.lastRound ? (
               <>
                 <Text style={styles.meta}>{item.lastRound.roundName} · {item.lastRound.siteName}</Text>
-                <Text style={styles.meta}>{formatDateTime(item.lastRound.plannedStartAt)} · {statusLabel(item.lastRound.status)}</Text>
+                <Text style={styles.meta}>{formatPlannedDateTime(item.lastRound.plannedStartAt)} · {statusLabel(item.lastRound.status)}</Text>
                 <Text style={styles.progress}>{item.lastRound.progress.validated}/{item.lastRound.progress.total} points{item.lastRound.outOfOrderCount ? ` · ${item.lastRound.outOfOrderCount} hors ordre` : ''}</Text>
               </>
             ) : (

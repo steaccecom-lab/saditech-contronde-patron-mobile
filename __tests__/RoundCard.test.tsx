@@ -17,6 +17,13 @@ const round = {
 } as RoundItem;
 
 describe('RoundCard', () => {
+  it.each(['2026-09-19', '2026-09-20', '2026-09-21'])('shows the civil date and 23h on %s', day => {
+    const tree = renderer.create(<RoundCard round={{
+      ...round, plannedStartAt: day + 'T23:00:00Z',
+    }} onPress={jest.fn()} />);
+    expect(JSON.stringify(tree.toJSON())).toContain(day.slice(8) + '/09 23:00');
+    tree.unmount();
+  });
   it('uses the raw status for the color and the French label for display', () => {
     const tree = renderer.create(<RoundCard round={round} onPress={jest.fn()} />);
     const status = tree.root.findAllByType(Text).find((node) => node.props.children === 'En retard');
