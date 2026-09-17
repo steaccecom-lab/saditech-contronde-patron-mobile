@@ -26,7 +26,7 @@ describe('navigation superviseur', () => {
 
     const remainingTabs = ['Home', 'Rounds', 'Agents', 'Settings'];
     const positions = remainingTabs.map((name) =>
-      navigator.indexOf(`<Tab.Screen name="${name}"`),
+      navigator.search(new RegExp(`<Tab\\.Screen\\s+name="${name}"`)),
     );
     expect(positions.every((position) => position >= 0)).toBe(true);
     expect(positions).toEqual([...positions].sort((left, right) => left - right));

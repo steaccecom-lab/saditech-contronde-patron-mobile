@@ -1,0 +1,14 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src https://tile.openstreetmap.org data:; connect-src 'none';">
+<link rel="stylesheet" href="leaflet.css"><style>html,body,#map{height:100%;margin:0}#notice{position:absolute;top:8px;right:8px;background:white;padding:6px;z-index:800;font:12px sans-serif}</style></head>
+<body><div id="map" aria-label="Carte des agents en mission"></div><div id="notice" hidden>Fond de carte indisponible</div><script src="leaflet.js"></script><script>
+const map=L.map('map').setView([33.57,-7.59],7), markers=L.layerGroup().addTo(map);
+const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',updateWhenIdle:true,keepBuffer:2}).addTo(map);
+tiles.on('tileerror',()=>document.getElementById('notice').hidden=false);
+let fitted=false, previousIds='';
+window.setAgents=function(agents){markers.clearLayers();const bounds=[];agents.forEach(a=>{if(!Number.isFinite(a.latitude)||!Number.isFinite(a.longitude))return;
+const marker=L.circleMarker([a.latitude,a.longitude],{radius:10,color:a.status==='LIVE'?'#16794b':a.status==='STALE'?'#af7000':'#666',fillOpacity:0.8}).addTo(markers);
+const label=document.createElement('span');label.textContent=a.name;marker.bindTooltip(label);
+marker.on('click',()=>window.ReactNativeWebView.postMessage(JSON.stringify({id:a.id})));bounds.push([a.latitude,a.longitude]);});
+const ids=agents.map(a=>a.id).sort().join(',');if(bounds.length&&(!fitted||ids!==previousIds)){map.fitBounds(bounds,{padding:[30,30],maxZoom:17});fitted=true;}previousIds=ids;if(!bounds.length)fitted=false;};
+</script></body></html>
