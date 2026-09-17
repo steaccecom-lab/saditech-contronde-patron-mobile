@@ -22,7 +22,7 @@ it('preserves the agent search when switching between list and map', () => {
     'BOUCHTA',
   );
   fireEvent.press(view.getByText('Carte'));
-  fireEvent.press(view.getByText('Liste des agents'));
+  fireEvent.press(view.getByText('Liste'));
   expect(view.getByPlaceholderText('Recherche par nom').props.value).toBe(
     'BOUCHTA',
   );

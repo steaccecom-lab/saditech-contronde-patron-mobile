@@ -3,6 +3,7 @@ import {gpsElapsedTime} from './gpsClock';
 export type LiveAgent = {
   agentId: string;
   sessionId: string;
+  scheduledRoundId?: string | null;
   companyId: string;
   siteId: string;
   agentName: string;
@@ -47,11 +48,17 @@ export function liveStatus(
     return 'OFFLINE';
   }
   const age = now - Date.parse(agent.position.capturedAt);
+  if (
+    !Number.isFinite(age) ||
+    !Number.isFinite(Date.parse(agent.seenAt)) ||
+    age < -5000
+  )
+    {return 'OFFLINE';}
   return age < 45000 ? 'LIVE' : age < 120000 ? 'STALE' : 'OFFLINE';
 }
 export const liveLabel = {
   LIVE: 'Live',
-  STALE: 'Position ancienne',
+  STALE: 'Stale · Position ancienne',
   OFFLINE: 'Offline',
 };
 export function visibleLiveAgents(agents: LiveAgent[], now: number) {
@@ -60,4 +67,16 @@ export function visibleLiveAgents(agents: LiveAgent[], now: number) {
       agent.mode === 'ROUND' ||
       (agent.endsAt && Date.parse(agent.endsAt) > now),
   );
+}
+export function positionAge(capturedAt: string, now: number) {
+  const seconds = Math.max(
+    0,
+    Math.floor((now - Date.parse(capturedAt)) / 1000),
+  );
+  if (!Number.isFinite(seconds)) {return 'heure inconnue';}
+  return seconds < 60
+    ? `il y a ${seconds} s`
+    : seconds < 3600
+    ? `il y a ${Math.floor(seconds / 60)} min`
+    : `il y a ${Math.floor(seconds / 3600)} h`;
 }

@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {
   FlatList,
+  ScrollView,
   AppState,
   Linking,
   StyleSheet,
@@ -9,13 +10,16 @@ import {
   View,
 } from 'react-native';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {useIsFocused} from '@react-navigation/native';
+import {useIsFocused, useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import type {RootStackParamList} from '../types/navigation';
 import {WebView} from 'react-native-webview';
 import {useAuthStore} from '../stores/authStore';
 import {
   getLiveAgents,
   liveLabel,
   liveStatus,
+  positionAge,
   visibleLiveAgents,
   type LiveAgent,
 } from '../services/liveGpsApi';
@@ -26,6 +30,8 @@ import {gpsElapsedTime, gpsServerNow} from '../services/gpsClock';
 const time = (value: string) =>
   moment(value).tz('Africa/Casablanca').format('HH:mm:ss');
 export function LiveAgentsMap() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const client = useQueryClient();
   const user = useAuthStore(s => s.user);
   const owner = `${user?.companyId}:${user?.id}`;
@@ -36,6 +42,8 @@ export function LiveAgentsMap() {
   const initialReceipt = useRef(gpsElapsedTime());
   const web = useRef<WebView>(null);
   const [ready, setReady] = useState(false);
+  const [mapType, setMapType] = useState<'satellite' | 'plan'>('satellite');
+  const [showAgents, setShowAgents] = useState(false);
   const query = useQuery({
     queryKey: ['liveGps', owner],
     enabled: Boolean(user) && focused,
@@ -82,7 +90,7 @@ export function LiveAgentsMap() {
     ? gpsServerNow(
         query.data.serverTime,
         query.data.receivedAt ?? initialReceipt.current,
-        clock,
+        Math.max(clock, gpsElapsedTime()),
       )
     : Date.now();
   const errorStatus = (query.error as {response?: {status?: number}} | null)
@@ -103,6 +111,7 @@ export function LiveAgentsMap() {
         name: agent.agentName,
         latitude: agent.position!.latitude,
         longitude: agent.position!.longitude,
+        capturedAt: agent.position!.capturedAt,
         status: liveStatus(agent, now, query.isError),
       })),
   );
@@ -111,10 +120,41 @@ export function LiveAgentsMap() {
       web.current?.injectJavaScript(`window.setAgents(${payload}); true;`);
     }
   }, [payload, ready]);
+  useEffect(() => {
+    if (ready)
+      {web.current?.injectJavaScript(
+        `window.setMapType(${JSON.stringify(mapType)}); true;`,
+      );}
+  }, [mapType, ready]);
   const detail = shown.find(agent => agent.agentId === selected);
   return (
     <View style={styles.container}>
-      <View style={styles.filters}>
+      <View style={styles.toolbar}>
+        {(['satellite', 'plan'] as const).map(type => (
+          <TouchableOpacity
+            key={type}
+            accessibilityRole="button"
+            accessibilityState={{selected: mapType === type}}
+            style={[styles.chip, mapType === type && styles.chipActive]}
+            onPress={() => setMapType(type)}>
+            <Text
+              style={mapType === type ? styles.activeText : styles.selected}>
+              {type === 'satellite' ? 'Satellite' : 'Plan'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+        <TouchableOpacity
+          style={styles.chip}
+          onPress={() => setShowAgents(value => !value)}>
+          <Text>
+            {shown.length} agents {showAgents ? '▴' : '▾'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      <ScrollView
+        horizontal
+        style={styles.siteScroll}
+        contentContainerStyle={styles.filters}>
         <TouchableOpacity onPress={() => setSite('')}>
           <Text>Tous les sites</Text>
         </TouchableOpacity>
@@ -125,7 +165,7 @@ export function LiveAgentsMap() {
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
       {query.isPending && <Text>Chargement des positions…</Text>}
       {query.isError && (
         <TouchableOpacity onPress={() => query.refetch()}>
@@ -138,7 +178,7 @@ export function LiveAgentsMap() {
         ref={web}
         key={owner}
         style={styles.map}
-        source={{uri: 'file:///android_asset/agent-map/index.html'}}
+        source={MAP_SOURCE}
         originWhitelist={['file://*']}
         allowFileAccess
         cacheEnabled
@@ -148,7 +188,7 @@ export function LiveAgentsMap() {
         allowUniversalAccessFromFileURLs={false}
         mixedContentMode="never"
         userAgent="CONTRONDE-Patron/1.0 (+https://saditech.ma)"
-        onLoadEnd={() => setReady(true)}
+        onLoadStart={() => setReady(false)}
         onShouldStartLoadWithRequest={request => {
           if (request.url === 'file:///android_asset/agent-map/index.html') {
             return true;
@@ -160,7 +200,12 @@ export function LiveAgentsMap() {
         }}
         onMessage={event => {
           try {
-            const id: unknown = JSON.parse(event.nativeEvent.data).id;
+            const message = JSON.parse(event.nativeEvent.data);
+            if (message.type === 'ready') {
+              setReady(true);
+              return;
+            }
+            const id: unknown = message.id;
             if (
               typeof id === 'string' &&
               shown.some(agent => agent.agentId === id)
@@ -173,7 +218,9 @@ export function LiveAgentsMap() {
         }}
       />
       {detail && (
-        <View style={styles.detail}>
+        <ScrollView
+          style={styles.detail}
+          contentContainerStyle={styles.detailContent}>
           <AgentDetails agent={detail} now={now} disconnected={query.isError} />
           <Text>
             Début : {time(detail.startedAt)} · Durée :{' '}
@@ -190,26 +237,65 @@ export function LiveAgentsMap() {
           {detail.nextCheckpoint && detail.mode === 'ROUND' && (
             <Text>Prochain point : {detail.nextCheckpoint}</Text>
           )}
-          <TouchableOpacity onPress={() => setSelected(undefined)}>
-            <Text>Fermer le détail</Text>
-          </TouchableOpacity>
-        </View>
+          <View style={styles.toolbar}>
+            {detail.position && (
+              <TouchableOpacity
+                style={styles.chip}
+                onPress={() =>
+                  web.current?.injectJavaScript(
+                    `window.centerAgent(${JSON.stringify(
+                      detail.agentId,
+                    )}); true;`,
+                  )
+                }>
+                <Text>Recentrer sur l’agent</Text>
+              </TouchableOpacity>
+            )}
+            {detail.scheduledRoundId && (
+              <TouchableOpacity
+                style={styles.chip}
+                onPress={() =>
+                  navigation.navigate('RoundDetail', {
+                    id: detail.scheduledRoundId!,
+                  })
+                }>
+                <Text>Détail de la ronde</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={() => setSelected(undefined)}>
+              <Text>Fermer le détail</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       )}
-      <FlatList
-        data={shown}
-        keyExtractor={agent => agent.agentId}
-        style={styles.list}
-        ListEmptyComponent={
-          <Text>Aucun agent en ronde ou en suivi post-ronde.</Text>
-        }
-        renderItem={({item}) => (
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => setSelected(item.agentId)}>
-            <AgentDetails agent={item} now={now} disconnected={query.isError} />
-          </TouchableOpacity>
-        )}
-      />
+      {showAgents && (
+        <FlatList
+          data={shown}
+          keyExtractor={agent => agent.agentId}
+          style={styles.list}
+          ListEmptyComponent={
+            <Text>Aucun agent en ronde ou en suivi post-ronde.</Text>
+          }
+          renderItem={({item}) => (
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => setSelected(item.agentId)}>
+              <Text style={styles.selected}>
+                {item.agentName} · {item.siteName}
+              </Text>
+              <Text>
+                {liveLabel[liveStatus(item, now, query.isError)]} ·{' '}
+                {item.progress.validated}/{item.progress.total} checkpoints
+              </Text>
+            </TouchableOpacity>
+          )}
+        />
+      )}
+      {!query.isPending && shown.length === 0 && (
+        <Text style={styles.empty}>
+          Aucun agent en ronde ou en suivi post-ronde.
+        </Text>
+      )}
     </View>
   );
 }
@@ -238,13 +324,24 @@ function AgentDetails({
           {time(agent.lastCheckpoint.scannedAt)}
         </Text>
       )}
-      <Text>
+      <Text
+        style={[
+          styles.badge,
+          {
+            color:
+              status === 'LIVE'
+                ? colors.success
+                : status === 'STALE'
+                ? colors.warning
+                : colors.danger,
+          },
+        ]}>
         {liveLabel[status]}
         {agent.position
-          ? ` · Mise à jour il y a ${Math.max(
-              0,
-              Math.floor((now - Date.parse(agent.position.capturedAt)) / 1000),
-            )} s · Précision ± ${Math.round(agent.position.accuracy)} m`
+          ? ` · ${positionAge(
+              agent.position.capturedAt,
+              now,
+            )} · Précision ± ${Math.round(agent.position.accuracy)} m`
           : ' · Position indisponible'}
       </Text>
       {agent.position && (
@@ -270,8 +367,34 @@ const styles = StyleSheet.create({
   container: {flex: 1},
   map: {flex: 1, minHeight: 200},
   list: {maxHeight: 230},
-  filters: {padding: 12, gap: 10, flexDirection: 'row', flexWrap: 'wrap'},
+  siteScroll: {flexGrow: 0, maxHeight: 42},
+  filters: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 16,
+    alignItems: 'center',
+  },
+  toolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 6,
+    flexWrap: 'wrap',
+  },
+  chip: {
+    paddingHorizontal: 12,
+    minHeight: 40,
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: colors.background,
+  },
+  chipActive: {backgroundColor: colors.primary},
+  activeText: {color: colors.surface, fontWeight: '700'},
+  badge: {fontWeight: '800', marginVertical: 4},
+  empty: {padding: 12, color: colors.muted},
   selected: {fontWeight: '800', color: colors.text},
-  detail: {padding: 12, backgroundColor: colors.surface},
+  detail: {maxHeight: 250, flexGrow: 0, backgroundColor: colors.surface},
+  detailContent: {padding: 10, gap: 3},
   card: {padding: 12, borderBottomWidth: 1, borderColor: colors.border},
 });
+const MAP_SOURCE = {uri: 'file:///android_asset/agent-map/index.html'};

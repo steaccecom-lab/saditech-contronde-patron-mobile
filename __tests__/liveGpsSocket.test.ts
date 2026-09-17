@@ -81,3 +81,24 @@ it('clears pending GPS refreshes and private cache on identity change', () => {
   expect(client.removeQueries).toHaveBeenCalledWith({queryKey: ['liveGps']});
   expect(client.invalidateQueries).not.toHaveBeenCalled();
 });
+it('refreshes again when a GPS event arrives during an older snapshot', async () => {
+  let finish!: () => void;
+  const invalidateQueries = jest
+    .fn()
+    .mockImplementationOnce(
+      () =>
+        new Promise<void>(resolve => {
+          finish = resolve;
+        }),
+    )
+    .mockResolvedValue(undefined);
+  connectSocket({
+    invalidateQueries,
+    isFetching: () => 1,
+  } as unknown as QueryClient);
+  handlers['agent.location.updated']();
+  jest.advanceTimersByTime(1000);
+  finish();
+  await Promise.resolve();
+  expect(invalidateQueries).toHaveBeenCalledTimes(2);
+});

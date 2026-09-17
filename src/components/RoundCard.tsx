@@ -1,28 +1,58 @@
 import {formatPlannedDateTime} from '../utils/format';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import type { RoundItem } from '../types/api';
-import { colors } from '../theme/colors';
-import { statusLabel } from '../utils/format';
+import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import type {RoundItem} from '../types/api';
+import {colors} from '../theme/colors';
+import {statusLabel} from '../utils/format';
 
-export function RoundCard({ round, onPress }: { round: RoundItem; onPress: () => void }) {
-  const tone = round.status === 'FINISHED' ? colors.success : round.status === 'MISSED' ? colors.danger : round.status === 'LATE' ? colors.warning : colors.info;
+export function RoundCard({
+  round,
+  onPress,
+}: {
+  round: RoundItem;
+  onPress: () => void;
+}) {
+  const tone =
+    round.status === 'FINISHED'
+      ? colors.success
+      : round.status === 'MISSED'
+      ? colors.danger
+      : round.status === 'LATE'
+      ? colors.warning
+      : colors.info;
 
   return (
-    <TouchableOpacity accessibilityRole="button" style={styles.card} onPress={onPress}>
+    <TouchableOpacity
+      accessibilityRole="button"
+      style={styles.card}
+      onPress={onPress}>
       <View style={styles.row}>
         <Text style={styles.title}>{round.round.name}</Text>
-        <Text style={[styles.status, { color: tone }]}>{statusLabel(round.status)}</Text>
+        <Text style={[styles.status, {color: tone}]}>
+          {statusLabel(round.status)}
+        </Text>
       </View>
       <Text style={styles.meta}>{round.site.name}</Text>
-      <Text style={styles.meta}>{round.agent?.name ?? 'Agent non assigné'}</Text>
-      <Text style={styles.meta}>Prévue: {formatPlannedDateTime(round.plannedStartAt)}</Text>
+      <Text style={styles.meta}>
+        {round.agent?.name ?? 'Agent non assigné'}
+      </Text>
+      <Text style={styles.meta}>
+        Prévue: {formatPlannedDateTime(round.plannedStartAt)}
+      </Text>
       <Text style={styles.progress}>
         {round.progress.validated}/{round.progress.total} points
-        {round.outOfOrderCount > 0 ? ` · ${round.outOfOrderCount} hors ordre` : ''}
-        {round.missedCheckpointCount > 0 ? ` · ${round.missedCheckpointCount} manqué${round.missedCheckpointCount > 1 ? 's' : ''}` : ''}
+        {round.outOfOrderCount > 0
+          ? ` · ${round.outOfOrderCount} hors ordre`
+          : ''}
+        {round.missedCheckpointCount > 0
+          ? ` · ${round.missedCheckpointCount} manqué${
+              round.missedCheckpointCount > 1 ? 's' : ''
+            }`
+          : ''}
       </Text>
-      {round.status === 'LATE' ? <Text style={styles.warning}>Retard signalé</Text> : null}
+      {round.status === 'LATE' ? (
+        <Text style={styles.warning}>Retard signalé</Text>
+      ) : null}
     </TouchableOpacity>
   );
 }
@@ -33,8 +63,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 8,
-    padding: 14,
-    marginBottom: 10,
+    padding: 10,
+    marginBottom: 8,
   },
   row: {
     flexDirection: 'row',
@@ -49,17 +79,20 @@ const styles = StyleSheet.create({
   },
   status: {
     fontWeight: '800',
+    backgroundColor: colors.background,
+    paddingHorizontal: 6,
+    borderRadius: 5,
   },
   meta: {
     color: colors.muted,
     fontSize: 14,
-    marginTop: 5,
+    marginTop: 3,
   },
   progress: {
     color: colors.text,
     fontSize: 15,
     fontWeight: '700',
-    marginTop: 8,
+    marginTop: 5,
   },
   warning: {
     color: colors.warning,

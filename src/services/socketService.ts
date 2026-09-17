@@ -19,14 +19,27 @@ export function connectSocket(queryClient: QueryClient): void {
     transports: ['websocket'],
     auth: callback => callback({token: useAuthStore.getState().accessToken}),
   });
+  const connection = socket;
   const invalidateGps = () => {
     if (gpsRefreshTimer) {
       return;
     }
     gpsRefreshTimer = setTimeout(() => {
       gpsRefreshTimer = undefined;
+      const alreadyFetching =
+        queryClient.isFetching?.({queryKey: ['liveGps']}) > 0;
       queryClient
         .invalidateQueries({queryKey: ['liveGps']}, {cancelRefetch: false})
+        .then(() => {
+          // An event arriving during a snapshot must not be consumed by that
+          // older request. Read once more after it completes, without cancelling.
+          if (alreadyFetching && socket === connection) {
+            return queryClient.invalidateQueries(
+              {queryKey: ['liveGps']},
+              {cancelRefetch: false},
+            );
+          }
+        })
         .catch(() => undefined);
     }, 1000);
   };

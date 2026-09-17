@@ -40,17 +40,13 @@ export function RoundsScreen() {
   const filter = filters[selected];
   const isSupervisor = user?.roleType === 'SUPERVISOR';
   const sitesQuery = useQuery({
-    queryKey: user
-      ? supervisorSitesQueryKey(user)
-      : ['sites', 'anonymous'],
+    queryKey: user ? supervisorSitesQueryKey(user) : ['sites', 'anonymous'],
     queryFn: getSites,
     enabled: Boolean(user && isSupervisor),
   });
   const hasSupervisorScope = !isSupervisor || Boolean(sitesQuery.data?.length);
   const roundsQuery = useInfiniteQuery({
-    queryKey: user
-      ? roundsQueryKey(user, filter)
-      : ['rounds', 'anonymous'],
+    queryKey: user ? roundsQueryKey(user, filter) : ['rounds', 'anonymous'],
     queryFn: ({pageParam = 1}) =>
       getRounds({
         page: pageParam,
@@ -108,10 +104,7 @@ export function RoundsScreen() {
         {filters.map((item, index) => (
           <TouchableOpacity
             key={item.label}
-            style={[
-              styles.filter,
-              selected === index && styles.filterActive,
-            ]}
+            style={[styles.filter, selected === index && styles.filterActive]}
             onPress={() => setSelected(index)}>
             <Text
               style={[
@@ -172,18 +165,18 @@ function roundsErrorMessage(error: unknown): string {
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: colors.background, paddingTop: 16},
+  container: {flex: 1, backgroundColor: colors.background, paddingTop: 10},
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '900',
     color: colors.text,
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   filters: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
     paddingHorizontal: 16,
     marginBottom: 8,
   },
@@ -192,12 +185,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     justifyContent: 'center',
     backgroundColor: colors.surface,
   },
   filterActive: {backgroundColor: colors.primary, borderColor: colors.primary},
   filterText: {color: colors.text, fontWeight: '700'},
   filterTextActive: {color: colors.surface},
-  list: {flexGrow: 1, padding: 16},
+  list: {flexGrow: 1, padding: 12},
 });

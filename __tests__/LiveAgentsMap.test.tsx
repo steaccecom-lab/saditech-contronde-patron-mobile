@@ -3,11 +3,15 @@ import {fireEvent, render} from '@testing-library/react-native';
 import {LiveAgentsMap} from '../src/components/LiveAgentsMap';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {http} from '../src/services/http';
+const mockInject = jest.fn();
 jest.mock('@tanstack/react-query', () => ({
   useQuery: jest.fn(),
   useQueryClient: jest.fn(() => ({setQueryData: jest.fn()})),
 }));
-jest.mock('@react-navigation/native', () => ({useIsFocused: () => true}));
+jest.mock('@react-navigation/native', () => ({
+  useIsFocused: () => true,
+  useNavigation: () => ({navigate: jest.fn()}),
+}));
 jest.mock('../src/services/http', () => ({http: {get: jest.fn()}}));
 jest.mock('../src/stores/authStore', () => ({
   useAuthStore: (selector: (state: unknown) => unknown) =>
@@ -18,7 +22,7 @@ jest.mock('react-native-webview', () => {
   const {View} = require('react-native');
   return {
     WebView: R.forwardRef((props: object, ref: unknown) => {
-      R.useImperativeHandle(ref, () => ({injectJavaScript: jest.fn()}));
+      R.useImperativeHandle(ref, () => ({injectJavaScript: mockInject}));
       return <View testID="map" {...props} />;
     }),
   };
@@ -69,6 +73,7 @@ const first = {
   status: 'LIVE',
 };
 beforeEach(() => {
+  mockInject.mockClear();
   jest.mocked(useQuery).mockReturnValue({
     data: {
       items: [
@@ -88,13 +93,64 @@ beforeEach(() => {
     isPending: false,
   } as never);
 });
+it('replays the latest snapshot at map ready, then sends three new timestamped positions without reloading', () => {
+  const view = render(<LiveAgentsMap />);
+  expect(mockInject).not.toHaveBeenCalled();
+  fireEvent(view.getByTestId('map'), 'message', {
+    nativeEvent: {data: '{"type":"ready"}'},
+  });
+  const source = view.getByTestId('map').props.source;
+  for (let index = 0; index < 3; index++) {
+    const capturedAt = new Date(Date.parse(now) + index * 30000).toISOString();
+    jest
+      .mocked(useQuery)
+      .mockReturnValue({
+        data: {
+          items: [
+            {
+              ...first,
+              position: {
+                ...first.position,
+                latitude: 33 + index / 1000,
+                capturedAt,
+              },
+            },
+          ],
+          serverTime: capturedAt,
+          receivedAt: performance.now(),
+        },
+      } as never);
+    view.rerender(<LiveAgentsMap />);
+    expect(
+      mockInject.mock.calls
+        .filter(([script]) => script.startsWith('window.setAgents'))
+        .at(-1)![0],
+    ).toContain(`"latitude":${33 + index / 1000}`);
+    expect(
+      mockInject.mock.calls
+        .filter(([script]) => script.startsWith('window.setAgents'))
+        .at(-1)![0],
+    ).toContain(capturedAt);
+    expect(view.getByTestId('map').props.source).toBe(source);
+  }
+  fireEvent.press(view.getByText('Plan'));
+  expect(mockInject).toHaveBeenLastCalledWith(
+    'window.setMapType("plan"); true;',
+  );
+  fireEvent.press(view.getByText('Satellite'));
+  expect(mockInject).toHaveBeenLastCalledWith(
+    'window.setMapType("satellite"); true;',
+  );
+});
 it('renders map and multiple agents, checkpoint and progress', () => {
   const view = render(<LiveAgentsMap />);
   expect(view.getByTestId('map')).toBeTruthy();
+  fireEvent.press(view.getByText('2 agents ▾'));
   expect(view.getByText('BOUCHTA · AIT AMMAR')).toBeTruthy();
   expect(view.getByText('ALI · AUTRE')).toBeTruthy();
-  expect(view.getAllByText('Ronde 18h · 3/5 checkpoints')).toHaveLength(2);
-  expect(view.getAllByText(/Dernier point : SILO1/)).toHaveLength(2);
+  fireEvent.press(view.getByText('BOUCHTA · AIT AMMAR'));
+  expect(view.getByText('Ronde 18h · 3/5 checkpoints')).toBeTruthy();
+  expect(view.getByText(/Dernier point : SILO1/)).toBeTruthy();
 });
 it('filters sites and marker click opens details', () => {
   const view = render(<LiveAgentsMap />);
@@ -121,6 +177,9 @@ it('labels post-round without claiming a running round', () => {
     dataUpdatedAt: Date.now(),
   } as never);
   const view = render(<LiveAgentsMap />);
+  fireEvent(view.getByTestId('map'), 'message', {
+    nativeEvent: {data: '{"id":"a"}'},
+  });
   expect(view.getByText('Suivi post-ronde')).toBeTruthy();
 });
 it('removes a marker after server confirms round end', () => {

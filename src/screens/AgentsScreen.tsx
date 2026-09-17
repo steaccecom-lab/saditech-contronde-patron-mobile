@@ -24,11 +24,23 @@ export function AgentsScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.tabs}>
-        <TouchableOpacity onPress={() => setMap(false)}>
-          <Text>Liste des agents</Text>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityState={{selected: !map}}
+          style={[styles.segment, !map && styles.segmentActive]}
+          onPress={() => setMap(false)}>
+          <Text style={!map ? styles.segmentTextActive : styles.segmentText}>
+            Liste
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => setMap(true)}>
-          <Text>Carte</Text>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityState={{selected: map}}
+          style={[styles.segment, map && styles.segmentActive]}
+          onPress={() => setMap(true)}>
+          <Text style={map ? styles.segmentTextActive : styles.segmentText}>
+            Carte
+          </Text>
         </TouchableOpacity>
       </View>
       <View style={map ? styles.hidden : styles.root}>
@@ -110,7 +122,22 @@ function AgentsList() {
                   {item.lastRound.roundName} · {item.lastRound.siteName}
                 </Text>
                 <Text style={styles.meta}>
-                  {formatPlannedDateTime(item.lastRound.plannedStartAt)} ·{' '}
+                  {formatPlannedDateTime(item.lastRound.plannedStartAt)}
+                </Text>
+                <Text
+                  style={[
+                    styles.status,
+                    {
+                      color:
+                        item.lastRound.status === 'FINISHED'
+                          ? colors.success
+                          : item.lastRound.status === 'MISSED'
+                          ? colors.danger
+                          : item.lastRound.status === 'LATE'
+                          ? colors.warning
+                          : colors.muted,
+                    },
+                  ]}>
                   {statusLabel(item.lastRound.status)}
                 </Text>
                 <Text style={styles.progress}>
@@ -134,14 +161,31 @@ function AgentsList() {
 const styles = StyleSheet.create({
   root: {flex: 1},
   hidden: {display: 'none'},
-  tabs: {flexDirection: 'row', padding: 12, gap: 24},
-  container: {flex: 1, backgroundColor: colors.background, paddingTop: 16},
+  tabs: {
+    flexDirection: 'row',
+    margin: 8,
+    padding: 3,
+    borderRadius: 10,
+    backgroundColor: colors.border,
+  },
+  segment: {
+    flex: 1,
+    minHeight: 42,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  segmentActive: {backgroundColor: colors.surface},
+  segmentText: {color: colors.muted, fontWeight: '700'},
+  segmentTextActive: {color: colors.primary, fontWeight: '800'},
+  status: {fontWeight: '800', marginTop: 4},
+  container: {flex: 1, backgroundColor: colors.background, paddingTop: 8},
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '900',
     color: colors.text,
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   search: {
     minHeight: 48,
@@ -154,14 +198,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 16,
   },
-  list: {padding: 16},
+  list: {padding: 12},
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 8,
-    padding: 14,
-    marginBottom: 10,
+    padding: 10,
+    marginBottom: 8,
   },
   name: {color: colors.text, fontSize: 17, fontWeight: '900'},
   meta: {color: colors.muted, marginTop: 5},
