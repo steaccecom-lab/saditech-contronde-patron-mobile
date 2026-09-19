@@ -42,6 +42,8 @@ function MainTabs() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
+        tabBarActiveBackgroundColor: colors.primarySoft,
+        tabBarItemStyle: {borderRadius: 12, marginHorizontal: 4},
         tabBarLabelStyle: {fontSize: 12, fontWeight: '700'},
         tabBarStyle: {minHeight: 62, paddingBottom: 8, paddingTop: 6},
       }}>

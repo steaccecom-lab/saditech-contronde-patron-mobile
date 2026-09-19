@@ -12,7 +12,7 @@ import {isAxiosError} from 'axios';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useNavigation} from '@react-navigation/native';
 import {getRounds, getSites} from '../services/patronApi';
-import type {RoundItem} from '../types/api';
+import type {RoundItem, RoundStatus} from '../types/api';
 import type {RootStackParamList} from '../types/navigation';
 import {RoundCard} from '../components/RoundCard';
 import {EmptyView, ErrorView, LoadingView} from '../components/StateViews';
@@ -24,12 +24,15 @@ import {
   type RoundFilter,
 } from '../query/roundsQuery';
 
-const filters: RoundFilter[] = [
+const periods: RoundFilter[] = [
   {label: "Aujourd'hui", period: 'today'},
   {label: '7 jours', period: '7d'},
-  {label: '30 jours', period: '30d'},
+];
+const statuses: {label: string; status: RoundStatus}[] = [
+  {label: 'Planifiées', status: 'PLANNED'},
   {label: 'Terminées', status: 'FINISHED'},
-  {label: 'Retard/manquées', status: 'LATE'},
+  {label: 'Retard', status: 'LATE'},
+  {label: 'Manquées', status: 'MISSED'},
 ];
 
 export function RoundsScreen() {
@@ -37,7 +40,8 @@ export function RoundsScreen() {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const user = useAuthStore(state => state.user);
   const [selected, setSelected] = useState(0);
-  const filter = filters[selected];
+  const [status, setStatus] = useState<RoundStatus>();
+  const filter = {...periods[selected], status};
   const isSupervisor = user?.roleType === 'SUPERVISOR';
   const sitesQuery = useQuery({
     queryKey: user ? supervisorSitesQueryKey(user) : ['sites', 'anonymous'],
@@ -52,7 +56,7 @@ export function RoundsScreen() {
         page: pageParam,
         limit: 20,
         period: filter.period,
-        status: filter.status as never,
+        status: filter.status,
       }),
     initialPageParam: 1,
     enabled: Boolean(
@@ -100,9 +104,14 @@ export function RoundsScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Rondes</Text>
+      <Text style={styles.caption}>
+        Vos rondes, de la plus récente à la plus ancienne
+      </Text>
       <View style={styles.filters}>
-        {filters.map((item, index) => (
+        {periods.map((item, index) => (
           <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityState={{selected: selected === index}}
             key={item.label}
             style={[styles.filter, selected === index && styles.filterActive]}
             onPress={() => setSelected(index)}>
@@ -116,6 +125,36 @@ export function RoundsScreen() {
           </TouchableOpacity>
         ))}
       </View>
+      <View style={styles.filters}>
+        {statuses.map(item => (
+          <TouchableOpacity
+            key={item.status}
+            accessibilityRole="button"
+            accessibilityState={{selected: status === item.status}}
+            style={[
+              styles.filter,
+              status === item.status && styles.filterActive,
+            ]}
+            onPress={() =>
+              setStatus(current =>
+                current === item.status ? undefined : item.status,
+              )
+            }>
+            <Text
+              style={[
+                styles.filterText,
+                status === item.status && styles.filterTextActive,
+              ]}>
+              {item.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <Text style={styles.caption}>
+        {status
+          ? 'Touchez le statut actif pour afficher tous les statuts.'
+          : 'Tous les statuts · Rondes en cours incluses'}
+      </Text>
       <FlatList
         data={items}
         keyExtractor={item => item.id}
@@ -127,7 +166,9 @@ export function RoundsScreen() {
           />
         }
         onEndReached={() =>
-          roundsQuery.hasNextPage && roundsQuery.fetchNextPage()
+          roundsQuery.hasNextPage &&
+          !roundsQuery.isFetchingNextPage &&
+          roundsQuery.fetchNextPage()
         }
         ListEmptyComponent={
           <EmptyView
@@ -173,16 +214,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 8,
   },
+  caption: {
+    color: colors.muted,
+    fontSize: 12,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
   filters: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 8,
     paddingHorizontal: 16,
     marginBottom: 8,
   },
   filter: {
-    minHeight: 40,
-    borderRadius: 8,
+    minHeight: 44,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: 10,

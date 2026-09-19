@@ -5,6 +5,7 @@ import {getDashboard} from '../services/patronApi';
 import {MetricCard} from '../components/MetricCard';
 import {EmptyView, ErrorView, LoadingView} from '../components/StateViews';
 import {colors} from '../theme/colors';
+import {cardSurface} from '../theme/surfaces';
 import {formatDateTime} from '../utils/format';
 
 export function HomeScreen() {
@@ -40,6 +41,10 @@ export function HomeScreen() {
       ListHeaderComponent={
         <>
           <Text style={styles.title}>Accueil</Text>
+          <Text style={styles.subtitle}>Votre supervision, en un regard</Text>
+          <Text style={styles.sync}>
+            Dernière synchronisation : {formatDateTime(query.data.generatedAt)}
+          </Text>
           <View style={styles.metrics}>
             <MetricCard
               label="Terminées aujourd'hui"
@@ -47,12 +52,12 @@ export function HomeScreen() {
               tone="success"
             />
             <MetricCard
-              label="En retard"
+              label="En retard aujourd'hui"
               value={query.data.summary.late}
               tone="warning"
             />
             <MetricCard
-              label="Manquées"
+              label="Manquées aujourd'hui"
               value={query.data.summary.missed}
               tone="danger"
             />
@@ -62,7 +67,9 @@ export function HomeScreen() {
       }
       data={query.data.liveActivity}
       keyExtractor={item => item.scanId}
-      ListEmptyComponent={<EmptyView label="Aucun scan récent." />}
+      ListEmptyComponent={
+        <EmptyView label="Aucune activité récente. Les prochains scans apparaîtront ici automatiquement." />
+      }
       renderItem={({item}) => (
         <View style={styles.activity}>
           <Text style={styles.activityTitle}>
@@ -89,14 +96,16 @@ export function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: colors.background},
-  content: {padding: 12},
+  content: {padding: 16, paddingBottom: 28},
+  subtitle: {color: colors.muted, fontSize: 16, marginBottom: 8},
+  sync: {color: colors.muted, fontSize: 12, marginBottom: 20},
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '900',
     color: colors.text,
     marginBottom: 10,
   },
-  metrics: {flexDirection: 'row', gap: 8, marginBottom: 12},
+  metrics: {flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20},
   section: {
     fontSize: 18,
     fontWeight: '900',
@@ -104,12 +113,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   activity: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 8,
+    ...cardSurface,
   },
   activityTitle: {color: colors.text, fontSize: 15, fontWeight: '800'},
   meta: {color: colors.muted, marginTop: 4, fontSize: 14},

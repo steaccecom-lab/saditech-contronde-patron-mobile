@@ -21,6 +21,9 @@ export const fr = {
   },
   notificationModes: {
     ALL_SCANS: 'Tous les scans',
+    FINISHED_ONLY: 'Seulement terminée',
+    LATE_ONLY: 'Seulement en retard',
+    MISSED_ONLY: 'Seulement manquées',
     OUT_OF_ORDER_ONLY: 'Seulement les scans hors ordre',
     DISABLED: 'Notifications désactivées',
   },

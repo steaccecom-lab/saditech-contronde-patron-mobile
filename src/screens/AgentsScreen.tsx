@@ -16,6 +16,7 @@ import {getAgents} from '../services/patronApi';
 import type {RootStackParamList} from '../types/navigation';
 import {EmptyView, ErrorView, LoadingView} from '../components/StateViews';
 import {colors} from '../theme/colors';
+import {cardSurface} from '../theme/surfaces';
 import {statusLabel} from '../utils/format';
 import {LiveAgentsMap} from '../components/LiveAgentsMap';
 
@@ -104,7 +105,7 @@ function AgentsList() {
         }
         onEndReached={() => query.hasNextPage && query.fetchNextPage()}
         ListEmptyComponent={
-          <EmptyView label="Aucune ronde sur cette période." />
+          <EmptyView label="Aucun agent ne correspond à votre recherche ou à votre périmètre." />
         }
         renderItem={({item}) => (
           <TouchableOpacity
@@ -159,26 +160,37 @@ function AgentsList() {
 }
 
 const styles = StyleSheet.create({
-  root: {flex: 1},
+  root: {flex: 1, backgroundColor: colors.background},
   hidden: {display: 'none'},
   tabs: {
     flexDirection: 'row',
-    margin: 8,
-    padding: 3,
-    borderRadius: 10,
-    backgroundColor: colors.border,
+    margin: 16,
+    padding: 4,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   segment: {
     flex: 1,
-    minHeight: 42,
+    minHeight: 46,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: 12,
   },
-  segmentActive: {backgroundColor: colors.surface},
+  segmentActive: {backgroundColor: colors.primarySoft},
   segmentText: {color: colors.muted, fontWeight: '700'},
   segmentTextActive: {color: colors.primary, fontWeight: '800'},
-  status: {fontWeight: '800', marginTop: 4},
+  status: {
+    fontWeight: '800',
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.background,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
   container: {flex: 1, backgroundColor: colors.background, paddingTop: 8},
   title: {
     fontSize: 24,
@@ -200,12 +212,7 @@ const styles = StyleSheet.create({
   },
   list: {padding: 12},
   card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 8,
+    ...cardSurface,
   },
   name: {color: colors.text, fontSize: 17, fontWeight: '900'},
   meta: {color: colors.muted, marginTop: 5},

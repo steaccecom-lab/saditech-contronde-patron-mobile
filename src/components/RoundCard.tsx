@@ -3,6 +3,7 @@ import React from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import type {RoundItem} from '../types/api';
 import {colors} from '../theme/colors';
+import {cardSurface} from '../theme/surfaces';
 import {statusLabel} from '../utils/format';
 
 export function RoundCard({
@@ -59,17 +60,13 @@ export function RoundCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 8,
+    ...cardSurface,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 12,
+    alignItems: 'flex-start',
   },
   title: {
     flex: 1,
@@ -81,18 +78,21 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     backgroundColor: colors.background,
     paddingHorizontal: 6,
-    borderRadius: 5,
+    paddingVertical: 5,
+    borderRadius: 8,
+    overflow: 'hidden',
+    flexShrink: 1,
   },
   meta: {
     color: colors.muted,
     fontSize: 14,
-    marginTop: 3,
+    marginTop: 7,
   },
   progress: {
     color: colors.text,
     fontSize: 15,
     fontWeight: '700',
-    marginTop: 5,
+    marginTop: 12,
   },
   warning: {
     color: colors.warning,

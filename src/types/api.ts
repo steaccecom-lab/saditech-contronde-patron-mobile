@@ -1,6 +1,18 @@
 export type RoleType = 'COMPANY_ADMIN' | 'SUPERVISOR' | 'AGENT' | 'SUPER_ADMIN';
-export type RoundStatus = 'PLANNED' | 'LATE' | 'STARTED' | 'FINISHED' | 'MISSED' | 'CANCELLED';
-export type ScanNotificationMode = 'ALL_SCANS' | 'OUT_OF_ORDER_ONLY' | 'DISABLED';
+export type RoundStatus =
+  | 'PLANNED'
+  | 'LATE'
+  | 'STARTED'
+  | 'FINISHED'
+  | 'MISSED'
+  | 'CANCELLED';
+export type ScanNotificationMode =
+  | 'ALL_SCANS'
+  | 'OUT_OF_ORDER_ONLY'
+  | 'FINISHED_ONLY'
+  | 'LATE_ONLY'
+  | 'MISSED_ONLY'
+  | 'DISABLED';
 export type PeriodFilter = 'today' | '7d' | '30d' | 'custom';
 
 export type User = {
@@ -34,10 +46,10 @@ export type PatronScanActivity = {
   isOutOfOrder: boolean;
   expectedOrder: number;
   scanOrder: number;
-  agent: { id: string; name: string };
-  site: { id: string; name: string };
-  round: { id: string; name: string };
-  checkpoint: { id: string; name: string };
+  agent: {id: string; name: string};
+  site: {id: string; name: string};
+  round: {id: string; name: string};
+  checkpoint: {id: string; name: string};
   scan?: {
     scannedAt: string;
     scanOrder: number;
@@ -67,12 +79,12 @@ export type RoundItem = {
   plannedStartAt: string;
   startedAt: string | null;
   finishedAt: string | null;
-  progress: { validated: number; total: number };
+  progress: {validated: number; total: number};
   outOfOrderCount: number;
   missedCheckpointCount: number;
-  agent: { id: string; name: string } | null;
-  site: { id: string; name: string };
-  round: { id: string; name: string };
+  agent: {id: string; name: string} | null;
+  site: {id: string; name: string};
+  round: {id: string; name: string};
 };
 
 export type SiteItem = {
@@ -89,7 +101,7 @@ export type RoundsResponse = {
 
 export type RoundDetail = RoundItem & {
   durationSeconds: number | null;
-  agent: { id: string; name: string; email?: string } | null;
+  agent: {id: string; name: string; email?: string} | null;
   checkpoints: Array<{
     checkpointId: string;
     name: string;
@@ -120,7 +132,7 @@ export type AgentItem = {
     plannedStartAt: string;
     startedAt: string | null;
     finishedAt: string | null;
-    progress: { validated: number; total: number };
+    progress: {validated: number; total: number};
     outOfOrderCount: number;
   } | null;
 };
@@ -141,4 +153,7 @@ export type NotificationItem = {
   siteId: string | null;
 };
 
-export type NotificationsResponse = { items: NotificationItem[]; pagination: Pagination };
+export type NotificationsResponse = {
+  items: NotificationItem[];
+  pagination: Pagination;
+};

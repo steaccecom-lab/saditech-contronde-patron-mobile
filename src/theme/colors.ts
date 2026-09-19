@@ -9,4 +9,7 @@ export const colors = {
   warning: '#B86200',
   danger: '#C0362C',
   info: '#1F6FEB',
+  primarySoft: '#EAF2FF',
+  navy: '#102D50',
+  accent: '#F58220',
 };

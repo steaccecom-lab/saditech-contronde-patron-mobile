@@ -25,19 +25,22 @@ describe('navigation superviseur', () => {
     expect(navigationTypes).not.toMatch(/^\s+(History|Notifications):/m);
 
     const remainingTabs = ['Home', 'Rounds', 'Agents', 'Settings'];
-    const positions = remainingTabs.map((name) =>
+    const positions = remainingTabs.map(name =>
       navigator.search(new RegExp(`<Tab\\.Screen\\s+name="${name}"`)),
     );
-    expect(positions.every((position) => position >= 0)).toBe(true);
-    expect(positions).toEqual([...positions].sort((left, right) => left - right));
+    expect(positions.every(position => position >= 0)).toBe(true);
+    expect(positions).toEqual(
+      [...positions].sort((left, right) => left - right),
+    );
   });
 
   it('conserve les périodes intégrées aux rondes et l’ouverture du détail', () => {
-    for (const token of ["Aujourd'hui", '7 jours', '30 jours']) {
+    for (const token of ["Aujourd'hui", '7 jours']) {
       expect(rounds).toContain(token);
     }
     expect(rounds).toContain("navigate('RoundDetail'");
-    expect(navigator).toContain('RoundDetail: \'rounds/:id\'');
+    expect(rounds).not.toContain('30 jours');
+    expect(navigator).toContain("RoundDetail: 'rounds/:id'");
   });
 
   it('conserve FCM, le token appareil et l’ouverture directe d’une ronde', () => {
@@ -63,7 +66,9 @@ describe('navigation superviseur', () => {
     expect(socket).toContain("socket.on('patron.round.finished'");
     expect(socket).toContain("socket.on('patron.round.late'");
     expect(socket).toContain("socket.on('patron.round.missed'");
-    expect(notificationsApi).toContain("http.get<NotificationsResponse>('/notifications'");
+    expect(notificationsApi).toContain(
+      "http.get<NotificationsResponse>('/notifications'",
+    );
   });
 
   it('affiche des états explicites et actualisables pour les rondes', () => {
@@ -84,9 +89,9 @@ describe('navigation superviseur', () => {
 
   it('purge le cache privé au changement ou à la perte de session', () => {
     expect(authApi.match(/clearPrivateQueryCache\(\)/g)).toHaveLength(3);
-    expect(authApi.indexOf('updateAccessToken(response.data.accessToken')).toBeLessThan(
-      authApi.indexOf('const me = await currentUser()'),
-    );
+    expect(
+      authApi.indexOf('updateAccessToken(response.data.accessToken'),
+    ).toBeLessThan(authApi.indexOf('const me = await currentUser()'));
     expect(http).toContain('clearPrivateQueryCache()');
     expect(navigator).toContain("queryKey: ['rounds']");
     expect(authStore).toContain('pendingRoundId: null');

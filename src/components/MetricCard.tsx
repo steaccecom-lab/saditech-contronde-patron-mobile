@@ -1,6 +1,7 @@
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {colors} from '../theme/colors';
+import {cardSurface} from '../theme/surfaces';
 
 export function MetricCard({
   label,
@@ -12,7 +13,7 @@ export function MetricCard({
   tone: 'success' | 'warning' | 'danger';
 }) {
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, {borderTopColor: colors[tone]}]}>
       <Text style={[styles.value, {color: colors[tone]}]}>{value}</Text>
       <Text style={styles.label}>{label}</Text>
     </View>
@@ -21,16 +22,15 @@ export function MetricCard({
 
 const styles = StyleSheet.create({
   card: {
+    ...cardSurface,
     flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 10,
-    minHeight: 78,
+    minWidth: 92,
+    padding: 12,
+    borderTopWidth: 3,
+    minHeight: 110,
   },
   value: {
-    fontSize: 24,
+    fontSize: 30,
     fontWeight: '800',
   },
   label: {
