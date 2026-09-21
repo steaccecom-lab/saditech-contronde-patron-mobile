@@ -14,6 +14,8 @@ export function RoundCard({
   onPress: () => void;
 }) {
   const tone =
+    round.finalStatus === 'INCOMPLETE' ? colors.warning :
+    round.finalStatus === 'MISSED' ? colors.danger :
     round.status === 'FINISHED'
       ? colors.success
       : round.status === 'MISSED'
@@ -30,7 +32,7 @@ export function RoundCard({
       <View style={styles.row}>
         <Text style={styles.title}>{round.round.name}</Text>
         <Text style={[styles.status, {color: tone}]}>
-          {statusLabel(round.status)}
+          {round.finalStatus === 'INCOMPLETE' ? 'Incomplète' : round.finalStatus === 'MISSED' ? 'Manquée' : round.finalStatus === 'COMPLETED' ? 'Terminée' : statusLabel(round.status)}
         </Text>
       </View>
       <Text style={styles.meta}>{round.site.name}</Text>

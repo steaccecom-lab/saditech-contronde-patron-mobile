@@ -74,6 +74,9 @@ export type Pagination = {
 };
 
 export type RoundItem = {
+  finalStatus?: 'MISSED' | 'INCOMPLETE' | 'COMPLETED' | null;
+  closureReason?: string | null;
+  autoClosedAt?: string | null;
   id: string;
   status: RoundStatus;
   plannedStartAt: string;

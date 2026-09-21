@@ -28,6 +28,8 @@ export const fr = {
     DISABLED: 'Notifications désactivées',
   },
   anomalyTypes: {
+    MAX_DURATION_EXCEEDED: 'Durée maximale atteinte — clôture automatique',
+    CHECKPOINT_LATE: 'Point en retard',
     OUT_OF_ORDER: 'Point scanné hors ordre',
     DUPLICATE_SCAN: 'Scan dupliqué',
     INVALID_CHECKPOINT: 'Point de contrôle invalide',

@@ -17,6 +17,11 @@ const round = {
 } as RoundItem;
 
 describe('RoundCard', () => {
+  it.each([['MISSED', 'Manquée'], ['INCOMPLETE', 'Incomplète'], ['COMPLETED', 'Terminée']] as const)('shows the server final result %s', (finalStatus, label) => {
+    const tree = renderer.create(<RoundCard round={{ ...round, status: 'FINISHED', finalStatus }} onPress={jest.fn()} />);
+    expect(JSON.stringify(tree.toJSON())).toContain(label);
+    tree.unmount();
+  });
   it.each(['2026-09-19', '2026-09-20', '2026-09-21'])('shows the civil date and 23h on %s', day => {
     const tree = renderer.create(<RoundCard round={{
       ...round, plannedStartAt: day + 'T23:00:00Z',
