@@ -1,3 +1,5 @@
+import {BatteryDevices} from '../components/BatteryDevices';
+import {useBatteryRefresh} from '../hooks/useBatteryRefresh';
 import {formatPlannedDateTime} from '../utils/format';
 import React, {useState} from 'react';
 import {
@@ -55,7 +57,9 @@ function AgentsList() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [search, setSearch] = useState('');
+  const batteryRefresh = useBatteryRefresh();
   const query = useInfiniteQuery({
+    refetchInterval: batteryRefresh,
     queryKey: ['agents', search],
     queryFn: ({pageParam = 1}) =>
       getAgents({
@@ -117,6 +121,7 @@ function AgentsList() {
               })
             }>
             <Text style={styles.name}>{item.name}</Text>
+            <BatteryDevices devices={item.batteryDevices} />
             {item.lastRound ? (
               <>
                 <Text style={styles.meta}>

@@ -1,5 +1,5 @@
-import { http } from './http';
-import { getOrCreateDeviceId } from './secureTokenStorage';
+import {http} from './http';
+import {getOrCreateDeviceId} from './secureTokenStorage';
 
 export async function registerDevice(fcmToken: string): Promise<void> {
   const deviceId = await getOrCreateDeviceId();
@@ -8,10 +8,11 @@ export async function registerDevice(fcmToken: string): Promise<void> {
     platform: 'ANDROID',
     fcmToken,
     appType: 'PATRON',
+    supportsBatteryAlerts: true,
   });
 }
 
 export async function revokeCurrentDevice(): Promise<void> {
   const deviceId = await getOrCreateDeviceId();
-  await http.delete('/mobile-devices/current', { data: { deviceId } });
+  await http.delete('/mobile-devices/current', {data: {deviceId}});
 }

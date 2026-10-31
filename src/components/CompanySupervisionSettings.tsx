@@ -1,3 +1,4 @@
+import {BatterySupervisionSettings} from './BatterySupervisionSettings';
 import React, {useState} from 'react';
 import {
   ActivityIndicator,
@@ -36,7 +37,7 @@ const ruleFields = [
   },
   {
     key: 'checkpointLateToleranceMinutes',
-    label: 'Tolérance des checkpoints',
+    label: 'Tolérance des points de contrôle',
     min: 0,
     max: 1440,
     description:
@@ -67,10 +68,14 @@ const rulesOf = (settings: CompanyOperationSettings): RuleDraft => ({
     settings.missedIfNotStartedAfterMinutes == null
       ? ''
       : String(settings.missedIfNotStartedAfterMinutes),
-  checkpointLateToleranceMinutes: String(settings.checkpointLateToleranceMinutes),
+  checkpointLateToleranceMinutes: String(
+    settings.checkpointLateToleranceMinutes,
+  ),
   maxSessionDurationMinutes: String(settings.maxSessionDurationMinutes),
 });
-const notificationsOf = (settings: CompanyOperationSettings): NotificationDraft => ({
+const notificationsOf = (
+  settings: CompanyOperationSettings,
+): NotificationDraft => ({
   notifyLateRound: settings.notifyLateRound,
   notifyMissedRound: settings.notifyMissedRound,
   notifyCriticalAnomaly: settings.notifyCriticalAnomaly,
@@ -79,7 +84,7 @@ const notificationsOf = (settings: CompanyOperationSettings): NotificationDraft 
 function parseRules(draft: RuleDraft) {
   const values: Partial<Record<RuleKey, number | null>> = {};
   const errors: string[] = [];
-  ruleFields.forEach((field) => {
+  ruleFields.forEach(field => {
     const text = draft[field.key].trim();
     if (field.key === 'missedIfNotStartedAfterMinutes' && text === '') {
       values[field.key] = null;
@@ -89,7 +94,9 @@ function parseRules(draft: RuleDraft) {
       Number(text) < field.min ||
       Number(text) > field.max
     ) {
-      errors.push(`${field.label} : nombre entier entre ${field.min} et ${field.max} minutes.`);
+      errors.push(
+        `${field.label} : nombre entier entre ${field.min} et ${field.max} minutes.`,
+      );
     } else {
       values[field.key] = Number(text);
     }
@@ -99,16 +106,21 @@ function parseRules(draft: RuleDraft) {
     values.missedIfNotStartedAfterMinutes != null &&
     values.missedIfNotStartedAfterMinutes <= values.roundStartToleranceMinutes!
   ) {
-    errors.push('Le délai avant ronde manquée doit dépasser la tolérance de départ.');
+    errors.push(
+      'Le délai avant ronde manquée doit dépasser la tolérance de départ.',
+    );
   }
   return {values, errors};
 }
 
 export function CompanySupervisionSettings({user}: {user: User}) {
   const companyId = user.companyId;
-  const canRead = Boolean(companyId) && ['COMPANY_ADMIN', 'SUPERVISOR'].includes(user.roleType);
+  const canRead =
+    Boolean(companyId) &&
+    ['COMPANY_ADMIN', 'SUPERVISOR'].includes(user.roleType);
   const canEdit =
-    user.roleType === 'COMPANY_ADMIN' && user.permissions.includes('companies.manage');
+    user.roleType === 'COMPANY_ADMIN' &&
+    user.permissions.includes('companies.manage');
   const client = useQueryClient();
   const queryKey = ['companyOperationSettings', companyId, user.id];
   const query = useQuery({
@@ -119,7 +131,9 @@ export function CompanySupervisionSettings({user}: {user: User}) {
   });
   // Drafts are independent of query refreshes and of personal preferences.
   const [rules, setRules] = useState<RuleDraft | null>(null);
-  const [notifications, setNotifications] = useState<NotificationDraft | null>(null);
+  const [notifications, setNotifications] = useState<NotificationDraft | null>(
+    null,
+  );
   const [saved, setSaved] = useState<string | null>(null);
   const mutation = useMutation({
     mutationFn: ({
@@ -146,7 +160,7 @@ export function CompanySupervisionSettings({user}: {user: User}) {
   if (query.isPending) {
     return (
       <View style={styles.card}>
-        <Text style={styles.title}>Règles de supervision</Text>
+        <Text style={styles.title}>Règles de la société</Text>
         <ActivityIndicator accessibilityLabel="Chargement des règles de supervision" />
       </View>
     );
@@ -154,11 +168,13 @@ export function CompanySupervisionSettings({user}: {user: User}) {
   if (!query.data || query.isError) {
     return (
       <View style={styles.card}>
-        <Text style={styles.title}>Règles de supervision</Text>
+        <Text style={styles.title}>Règles de la société</Text>
         <Text accessibilityRole="alert" style={styles.error}>
           {parseApiError(query.error).messages.join('\n')}
         </Text>
-        <TouchableOpacity accessibilityRole="button" onPress={() => query.refetch()}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          onPress={() => query.refetch()}>
           <Text style={styles.link}>Réessayer le chargement</Text>
         </TouchableOpacity>
       </View>
@@ -167,9 +183,11 @@ export function CompanySupervisionSettings({user}: {user: User}) {
   const settings = query.data.settings;
   const currentRules = rules ?? rulesOf(settings);
   const currentNotifications = notifications ?? notificationsOf(settings);
-  const ruleDirty = JSON.stringify(currentRules) !== JSON.stringify(rulesOf(settings));
+  const ruleDirty =
+    JSON.stringify(currentRules) !== JSON.stringify(rulesOf(settings));
   const notificationDirty =
-    JSON.stringify(currentNotifications) !== JSON.stringify(notificationsOf(settings));
+    JSON.stringify(currentNotifications) !==
+    JSON.stringify(notificationsOf(settings));
   const parsed = parseRules(currentRules);
   const disabled = !canEdit || mutation.isPending;
   const change = () => {
@@ -191,98 +209,115 @@ export function CompanySupervisionSettings({user}: {user: User}) {
   };
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Règles de supervision</Text>
+      <Text style={styles.title}>Règles de la société</Text>
       <Text style={styles.description}>
         Règles de votre société, partagées entre ses utilisateurs autorisés.
       </Text>
       {!canEdit && (
         <Text style={styles.notice}>
-          Consultation uniquement : votre rôle ou vos permissions ne permettent pas la modification.
+          Consultation uniquement : votre rôle ou vos permissions ne permettent
+          pas la modification.
         </Text>
       )}
       {!query.data.configured && (
         <Text style={styles.notice}>
-          La tolérance de départ de chaque planning est actuellement utilisée. Enregistrer les
-          règles activera la tolérance société ci-dessous.
+          La tolérance de départ de chaque planning est actuellement utilisée.
+          Enregistrer les règles activera la tolérance société ci-dessous.
         </Text>
       )}
       <Text style={styles.notice}>
-        Les nouvelles tolérances peuvent modifier les prochaines vérifications des rondes en attente
-        et des checkpoints des rondes en cours. Elles ne recalculent pas les événements historiques.
+        Les nouvelles tolérances peuvent modifier les prochaines vérifications
+        des rondes en attente et des checkpoints des rondes en cours. Elles ne
+        recalculent pas les événements historiques.
       </Text>
-      {ruleFields.map((field) => (
-        <View key={field.key} style={styles.field}>
-          <Text style={styles.label}>{field.label} (minutes)</Text>
-          <Text style={styles.description}>{field.description}</Text>
-          <TextInput
-            accessibilityLabel={`${field.label} (minutes)`}
-            value={currentRules[field.key]}
-            editable={!disabled}
-            keyboardType="number-pad"
-            style={[styles.input, !canEdit && styles.readOnly]}
-            placeholder={
-              field.key === 'missedIfNotStartedAfterMinutes' ? 'Délai du planning' : undefined
-            }
-            onChangeText={(text) => {
-              change();
-              setRules({...currentRules, [field.key]: text});
-            }}
-          />
-        </View>
-      ))}
-      {canEdit &&
-        ruleDirty &&
-        parsed.errors.map((error) => (
-          <Text key={error} accessibilityRole="alert" style={styles.error}>
-            {error}
-          </Text>
+      <View style={styles.group}>
+        <Text style={styles.subtitle}>Tolérances des rondes</Text>
+        {ruleFields.map(field => (
+          <View key={field.key} style={styles.field}>
+            <Text style={styles.label}>{field.label} (minutes)</Text>
+            <Text style={styles.description}>{field.description}</Text>
+            <TextInput
+              accessibilityLabel={`${field.label} (minutes)`}
+              value={currentRules[field.key]}
+              editable={!disabled}
+              keyboardType="number-pad"
+              style={[styles.input, !canEdit && styles.readOnly]}
+              placeholder={
+                field.key === 'missedIfNotStartedAfterMinutes'
+                  ? 'Délai du planning'
+                  : undefined
+              }
+              onChangeText={text => {
+                change();
+                setRules({...currentRules, [field.key]: text});
+              }}
+            />
+          </View>
         ))}
-      {canEdit && (
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityState={{disabled: disabled || !ruleDirty || parsed.errors.length > 0}}
-          disabled={disabled || !ruleDirty || parsed.errors.length > 0}
-          style={[
-            styles.button,
-            (disabled || !ruleDirty || parsed.errors.length > 0) && styles.disabled,
-          ]}
-          onPress={() => save('rules')}
-        >
-          <Text style={styles.buttonText}>Enregistrer les règles</Text>
-        </TouchableOpacity>
-      )}
-      <Text style={styles.subtitle}>Notifications de la société</Text>
-      <Text style={styles.description}>
-        Ces réglages autorisent l’émission. Vos préférences personnelles ci-dessous filtrent les
-        notifications push reçues. Pour les anomalies critiques, choisissez « Tous les scans » dans
-        vos préférences personnelles.
-      </Text>
-      {notificationFields.map(([key, label]) => (
-        <View key={key} style={styles.switchRow}>
-          <Text style={[styles.label, styles.switchLabel]}>{label}</Text>
-          <Switch
-            accessibilityLabel={label}
-            disabled={disabled}
-            value={currentNotifications[key]}
-            onValueChange={(value) => {
-              change();
-              setNotifications({...currentNotifications, [key]: value});
+        {canEdit &&
+          ruleDirty &&
+          parsed.errors.map(error => (
+            <Text key={error} accessibilityRole="alert" style={styles.error}>
+              {error}
+            </Text>
+          ))}
+        {canEdit && (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityState={{
+              disabled: disabled || !ruleDirty || parsed.errors.length > 0,
             }}
-            trackColor={{true: colors.primary}}
-          />
-        </View>
-      ))}
-      {canEdit && (
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityState={{disabled: disabled || !notificationDirty}}
-          disabled={disabled || !notificationDirty}
-          style={[styles.button, (disabled || !notificationDirty) && styles.disabled]}
-          onPress={() => save('notifications')}
-        >
-          <Text style={styles.buttonText}>Enregistrer les notifications société</Text>
-        </TouchableOpacity>
-      )}
+            disabled={disabled || !ruleDirty || parsed.errors.length > 0}
+            style={[
+              styles.button,
+              (disabled || !ruleDirty || parsed.errors.length > 0) &&
+                styles.disabled,
+            ]}
+            onPress={() => save('rules')}>
+            <Text style={styles.buttonText}>Enregistrer les règles</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      <View style={styles.group}>
+        <Text style={styles.subtitle}>Notifications de la société</Text>
+        <Text style={styles.description}>
+          Ces réglages autorisent l’émission. Vos préférences personnelles
+          ci-dessous filtrent les notifications push reçues. Pour les anomalies
+          critiques, choisissez « Tous les scans » dans vos préférences
+          personnelles.
+        </Text>
+        {notificationFields.map(([key, label]) => (
+          <View key={key} style={styles.switchRow}>
+            <Text style={[styles.label, styles.switchLabel]}>{label}</Text>
+            <Switch
+              hitSlop={8}
+              accessibilityLabel={label}
+              disabled={disabled}
+              value={currentNotifications[key]}
+              onValueChange={value => {
+                change();
+                setNotifications({...currentNotifications, [key]: value});
+              }}
+              trackColor={{true: colors.primary}}
+            />
+          </View>
+        ))}
+        {canEdit && (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityState={{disabled: disabled || !notificationDirty}}
+            disabled={disabled || !notificationDirty}
+            style={[
+              styles.button,
+              (disabled || !notificationDirty) && styles.disabled,
+            ]}
+            onPress={() => save('notifications')}>
+            <Text style={styles.buttonText}>
+              Enregistrer les notifications société
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
       {mutation.isPending && (
         <Text accessibilityLiveRegion="polite" style={styles.description}>
           Enregistrement…
@@ -306,11 +341,18 @@ export function CompanySupervisionSettings({user}: {user: User}) {
             setRules(null);
             setNotifications(null);
             change();
-          }}
-        >
-          <Text style={styles.link}>Annuler les modifications de supervision</Text>
+          }}>
+          <Text style={styles.link}>
+            Annuler les modifications de supervision
+          </Text>
         </TouchableOpacity>
       )}
+      <BatterySupervisionSettings
+        companyId={companyId!}
+        canEdit={canEdit}
+        data={query.data}
+        queryKey={queryKey as string[]}
+      />
     </View>
   );
 }
@@ -324,15 +366,30 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 24,
   },
-  title: {fontSize: 20, fontWeight: '900', color: colors.text, marginBottom: 10},
+  title: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: colors.text,
+    marginBottom: 10,
+  },
+  group: {
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
   subtitle: {
     fontSize: 18,
     fontWeight: '800',
     color: colors.text,
-    marginTop: 24,
     marginBottom: 10,
   },
-  description: {color: colors.muted, lineHeight: 21, marginBottom: 8, flexShrink: 1},
+  description: {
+    color: colors.muted,
+    lineHeight: 21,
+    marginBottom: 8,
+    flexShrink: 1,
+  },
   notice: {color: colors.navy, lineHeight: 21, marginBottom: 14},
   field: {marginBottom: 14},
   label: {fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 6},
@@ -347,7 +404,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   readOnly: {backgroundColor: colors.background, color: colors.muted},
-  switchRow: {flexDirection: 'row', alignItems: 'center', marginBottom: 12, minHeight: 48},
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    minHeight: 48,
+  },
   switchLabel: {flex: 1, marginRight: 12},
   button: {
     minHeight: 48,
@@ -358,9 +420,19 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 10,
   },
-  buttonText: {color: colors.surface, fontWeight: '700', textAlign: 'center', flexShrink: 1},
+  buttonText: {
+    color: colors.surface,
+    fontWeight: '700',
+    textAlign: 'center',
+    flexShrink: 1,
+  },
   disabled: {opacity: 0.45},
   error: {color: colors.danger, lineHeight: 21, marginBottom: 8},
   success: {color: colors.success, lineHeight: 21, fontWeight: '700'},
-  link: {color: colors.primary, paddingVertical: 12, fontWeight: '700'},
+  link: {
+    color: colors.primary,
+    minHeight: 48,
+    paddingVertical: 14,
+    fontWeight: '700',
+  },
 });

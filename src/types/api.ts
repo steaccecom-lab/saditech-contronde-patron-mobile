@@ -1,5 +1,12 @@
+import type {BatteryDevice} from './battery';
 export type RoleType = 'COMPANY_ADMIN' | 'SUPERVISOR' | 'AGENT' | 'SUPER_ADMIN';
-export type RoundStatus = 'PLANNED' | 'LATE' | 'STARTED' | 'FINISHED' | 'MISSED' | 'CANCELLED';
+export type RoundStatus =
+  | 'PLANNED'
+  | 'LATE'
+  | 'STARTED'
+  | 'FINISHED'
+  | 'MISSED'
+  | 'CANCELLED';
 export type ScanNotificationMode =
   | 'ALL_SCANS'
   | 'OUT_OF_ORDER_ONLY'
@@ -68,6 +75,9 @@ export type Pagination = {
 };
 
 export type RoundItem = {
+  stepCount?: number | null;
+  stepTrackingStatus?: string | null;
+  stepCapturedAt?: string | null;
   finalStatus?: 'MISSED' | 'INCOMPLETE' | 'COMPLETED' | null;
   closureReason?: string | null;
   autoClosedAt?: string | null;
@@ -92,14 +102,12 @@ export type SiteItem = {
 };
 
 export type RoundsResponse = {
+  batteryDevices?: BatteryDevice[];
   items: RoundItem[];
   pagination: Pagination;
 };
 
 export type RoundDetail = RoundItem & {
-  stepCount?: number | null;
-  stepTrackingStatus?: string | null;
-  stepCapturedAt?: string | null;
   durationSeconds: number | null;
   agent: {id: string; name: string; email?: string} | null;
   checkpoints: Array<{
@@ -121,6 +129,7 @@ export type RoundDetail = RoundItem & {
 };
 
 export type AgentItem = {
+  batteryDevices?: BatteryDevice[];
   id: string;
   name: string;
   email: string;

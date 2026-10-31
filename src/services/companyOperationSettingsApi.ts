@@ -1,6 +1,6 @@
 import {http} from './http';
 
-export type CompanyOperationSettings = {
+export type CompanyOperationSettings = Partial<BatterySettings> & {
   missedIfNotStartedAfterMinutes: number | null;
   roundStartToleranceMinutes: number;
   checkpointLateToleranceMinutes: number;
@@ -20,7 +20,9 @@ export type CompanyOperationSettingsResponse = {
 
 export async function getCompanyOperationSettings(companyId: string) {
   return (
-    await http.get<CompanyOperationSettingsResponse>(`/company-operation-settings/${companyId}`)
+    await http.get<CompanyOperationSettingsResponse>(
+      `/company-operation-settings/${companyId}`,
+    )
   ).data;
 }
 
@@ -49,6 +51,24 @@ export async function saveCompanyOperationSettings(
     await http.put<CompanyOperationSettingsResponse>(
       `/company-operation-settings/${companyId}`,
       body,
+    )
+  ).data;
+}
+
+export type BatterySettings = {
+  batteryAlertsEnabled: boolean;
+  batteryLowThreshold: number;
+  batteryCriticalThreshold: number;
+  batteryRearmThreshold: number;
+};
+export async function saveBatterySettings(
+  companyId: string,
+  settings: BatterySettings,
+) {
+  return (
+    await http.put<CompanyOperationSettingsResponse>(
+      '/company-operation-settings/' + companyId,
+      {section: 'battery', ...settings},
     )
   ).data;
 }

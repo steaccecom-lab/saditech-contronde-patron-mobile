@@ -9,6 +9,7 @@ jest.mock('@tanstack/react-query', () => ({
   }),
 }));
 jest.mock('@react-navigation/native', () => ({
+  useIsFocused: () => true,
   useNavigation: () => ({navigate: jest.fn()}),
 }));
 jest.mock('../src/services/patronApi', () => ({getAgents: jest.fn()}));

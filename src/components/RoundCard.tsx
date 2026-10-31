@@ -4,6 +4,7 @@ import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import type {RoundItem} from '../types/api';
 import {colors} from '../theme/colors';
 import {cardSurface} from '../theme/surfaces';
+import {RoundSteps} from './RoundSteps';
 import {statusLabel} from '../utils/format';
 
 export function RoundCard({
@@ -14,9 +15,11 @@ export function RoundCard({
   onPress: () => void;
 }) {
   const tone =
-    round.finalStatus === 'INCOMPLETE' ? colors.warning :
-    round.finalStatus === 'MISSED' ? colors.danger :
-    round.status === 'FINISHED'
+    round.finalStatus === 'INCOMPLETE'
+      ? colors.warning
+      : round.finalStatus === 'MISSED'
+      ? colors.danger
+      : round.status === 'FINISHED'
       ? colors.success
       : round.status === 'MISSED'
       ? colors.danger
@@ -32,7 +35,13 @@ export function RoundCard({
       <View style={styles.row}>
         <Text style={styles.title}>{round.round.name}</Text>
         <Text style={[styles.status, {color: tone}]}>
-          {round.finalStatus === 'INCOMPLETE' ? 'Incomplète' : round.finalStatus === 'MISSED' ? 'Manquée' : round.finalStatus === 'COMPLETED' ? 'Terminée' : statusLabel(round.status)}
+          {round.finalStatus === 'INCOMPLETE'
+            ? 'Incomplète'
+            : round.finalStatus === 'MISSED'
+            ? 'Manquée'
+            : round.finalStatus === 'COMPLETED'
+            ? 'Terminée'
+            : statusLabel(round.status)}
         </Text>
       </View>
       <Text style={styles.meta}>{round.site.name}</Text>
@@ -42,17 +51,22 @@ export function RoundCard({
       <Text style={styles.meta}>
         Prévue: {formatPlannedDateTime(round.plannedStartAt)}
       </Text>
-      <Text style={styles.progress}>
-        {round.progress.validated}/{round.progress.total} points
-        {round.outOfOrderCount > 0
-          ? ` · ${round.outOfOrderCount} hors ordre`
-          : ''}
-        {round.missedCheckpointCount > 0
-          ? ` · ${round.missedCheckpointCount} manqué${
-              round.missedCheckpointCount > 1 ? 's' : ''
-            }`
-          : ''}
-      </Text>
+      <View style={styles.progressRow}>
+        <Text style={styles.progress}>
+          {round.progress.validated}/{round.progress.total} points
+          {round.outOfOrderCount > 0
+            ? ` · ${round.outOfOrderCount} hors ordre`
+            : ''}
+          {round.missedCheckpointCount > 0
+            ? ` · ${round.missedCheckpointCount} manqué${
+                round.missedCheckpointCount > 1 ? 's' : ''
+              }`
+            : ''}
+        </Text>
+        {round.status === 'FINISHED' ? (
+          <RoundSteps round={round} compact />
+        ) : null}
+      </View>
       {round.status === 'LATE' ? (
         <Text style={styles.warning}>Retard signalé</Text>
       ) : null}
@@ -90,11 +104,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 7,
   },
+  progressRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginTop: 12,
+  },
   progress: {
     color: colors.text,
     fontSize: 15,
     fontWeight: '700',
-    marginTop: 12,
+    flexShrink: 1,
   },
   warning: {
     color: colors.warning,
