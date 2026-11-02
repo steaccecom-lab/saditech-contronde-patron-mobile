@@ -7,5 +7,8 @@ export type BatteryDevice = {
   batteryCapturedAt: string | null;
   batteryReceivedAt: string | null;
   stale: boolean;
+  levelClassification?: 'NORMAL' | 'LOW' | 'CRITICAL' | 'UNAVAILABLE';
+  evaluatedAt?: string;
+  freshUntil?: string | null;
   severity: 'NORMAL' | 'LOW' | 'CRITICAL' | 'UNKNOWN';
 };

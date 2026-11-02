@@ -102,6 +102,8 @@ export type SiteItem = {
 };
 
 export type RoundsResponse = {
+  /** Local monotonic receipt time, never sent to the API or persisted. */
+  receivedAt?: number;
   batteryDevices?: BatteryDevice[];
   items: RoundItem[];
   pagination: Pagination;
@@ -134,6 +136,7 @@ export type AgentItem = {
   name: string;
   email: string;
   lastRound: {
+    finalStatus?: 'MISSED' | 'INCOMPLETE' | 'COMPLETED' | null;
     scheduledRoundId: string;
     roundName: string;
     siteName: string;
@@ -147,6 +150,8 @@ export type AgentItem = {
 };
 
 export type AgentsResponse = {
+  /** Local monotonic receipt time for the page's battery snapshot. */
+  receivedAt?: number;
   items: AgentItem[];
   pagination: Pagination;
 };

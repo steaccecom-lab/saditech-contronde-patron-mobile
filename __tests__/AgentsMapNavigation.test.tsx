@@ -7,6 +7,19 @@ jest.mock('@tanstack/react-query', () => ({
     isLoading: false,
     isError: false,
   }),
+  useQuery: () => ({data: [], isSuccess: true}),
+  useQueryClient: () => ({}),
+}));
+jest.mock('../src/stores/authStore', () => ({
+  useAuthStore: (selector: (state: unknown) => unknown) =>
+    selector({
+      user: {
+        id: 'u',
+        companyId: 'c',
+        roleType: 'COMPANY_ADMIN',
+        permissions: ['dashboard.read'],
+      },
+    }),
 }));
 jest.mock('@react-navigation/native', () => ({
   useIsFocused: () => true,

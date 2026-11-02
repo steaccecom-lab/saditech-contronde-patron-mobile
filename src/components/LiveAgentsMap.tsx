@@ -26,15 +26,17 @@ import {
 import {colors} from '../theme/colors';
 import moment from 'moment-timezone';
 import {gpsElapsedTime, gpsServerNow} from '../services/gpsClock';
+import {liveGpsQueryKey} from '../query/agentsQuery';
 
 const time = (value: string) =>
   moment(value).tz('Africa/Casablanca').format('HH:mm:ss');
-export function LiveAgentsMap() {
+export function LiveAgentsMap({readScope}: {readScope?: string} = {}) {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const client = useQueryClient();
   const user = useAuthStore(s => s.user);
   const owner = `${user?.companyId}:${user?.id}`;
+  const queryKey = liveGpsQueryKey(owner, readScope);
   const focused = useIsFocused();
   const [site, setSite] = useState('');
   const [selected, setSelected] = useState<string>();
@@ -45,7 +47,7 @@ export function LiveAgentsMap() {
   const [mapType, setMapType] = useState<'satellite' | 'plan'>('satellite');
   const [showAgents, setShowAgents] = useState(false);
   const query = useQuery({
-    queryKey: ['liveGps', owner],
+    queryKey,
     enabled: Boolean(user) && focused,
     queryFn: async ({signal}) => {
       try {
@@ -55,7 +57,7 @@ export function LiveAgentsMap() {
           ?.status;
         if (status === 401 || status === 403) {
           // A later network failure must never revive a forbidden snapshot.
-          client.setQueryData(['liveGps', owner], {
+          client.setQueryData(queryKey, {
             items: [],
             serverTime: new Date().toISOString(),
             receivedAt: gpsElapsedTime(),
@@ -84,7 +86,8 @@ export function LiveAgentsMap() {
   useEffect(() => {
     setSite('');
     setSelected(undefined);
-  }, [owner]);
+    setReady(false);
+  }, [owner, readScope]);
   // Advance from the latest server instant rather than trusting the handset timezone/clock.
   const now = query.data
     ? gpsServerNow(
@@ -121,10 +124,11 @@ export function LiveAgentsMap() {
     }
   }, [payload, ready]);
   useEffect(() => {
-    if (ready)
-      {web.current?.injectJavaScript(
+    if (ready) {
+      web.current?.injectJavaScript(
         `window.setMapType(${JSON.stringify(mapType)}); true;`,
-      );}
+      );
+    }
   }, [mapType, ready]);
   const detail = shown.find(agent => agent.agentId === selected);
   return (
@@ -176,7 +180,7 @@ export function LiveAgentsMap() {
       )}
       <WebView
         ref={web}
-        key={owner}
+        key={readScope ? `${owner}:${readScope}` : owner}
         style={styles.map}
         source={MAP_SOURCE}
         originWhitelist={['file://*']}

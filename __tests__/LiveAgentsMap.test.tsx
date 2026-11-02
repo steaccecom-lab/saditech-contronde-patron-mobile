@@ -28,6 +28,14 @@ jest.mock('react-native-webview', () => {
   };
 });
 const now = new Date().toISOString();
+it('shares the scoped list key when supplied while retaining the standalone default', () => {
+  render(<LiveAgentsMap readScope="supervisor-scope" />);
+  expect(jest.mocked(useQuery).mock.calls.at(-1)![0].queryKey).toEqual([
+    'liveGps',
+    'c:u',
+    'supervisor-scope',
+  ]);
+});
 it('erases cached positions on authorization denial before a later network error', async () => {
   const setQueryData = jest.fn();
   jest.mocked(useQueryClient).mockReturnValue({setQueryData} as never);
@@ -102,24 +110,22 @@ it('replays the latest snapshot at map ready, then sends three new timestamped p
   const source = view.getByTestId('map').props.source;
   for (let index = 0; index < 3; index++) {
     const capturedAt = new Date(Date.parse(now) + index * 30000).toISOString();
-    jest
-      .mocked(useQuery)
-      .mockReturnValue({
-        data: {
-          items: [
-            {
-              ...first,
-              position: {
-                ...first.position,
-                latitude: 33 + index / 1000,
-                capturedAt,
-              },
+    jest.mocked(useQuery).mockReturnValue({
+      data: {
+        items: [
+          {
+            ...first,
+            position: {
+              ...first.position,
+              latitude: 33 + index / 1000,
+              capturedAt,
             },
-          ],
-          serverTime: capturedAt,
-          receivedAt: performance.now(),
-        },
-      } as never);
+          },
+        ],
+        serverTime: capturedAt,
+        receivedAt: performance.now(),
+      },
+    } as never);
     view.rerender(<LiveAgentsMap />);
     expect(
       mockInject.mock.calls

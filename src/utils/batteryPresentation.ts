@@ -1,51 +1,58 @@
+﻿import moment from 'moment-timezone';
 import type {BatteryDevice} from '../types/battery';
-export function batteryPresentation(device: BatteryDevice, now = Date.now()) {
+
+/** Classification/deadline come from the API. elapsedMs is monotonic since receipt. */
+export function batteryPresentation(device: BatteryDevice, elapsedMs?: number) {
   const captured = device.batteryCapturedAt
     ? Date.parse(device.batteryCapturedAt)
     : NaN;
-  const received = device.batteryReceivedAt
-    ? Date.parse(device.batteryReceivedAt)
-    : NaN;
-  const stale =
-    device.stale ||
-    !Number.isFinite(captured) ||
-    !Number.isFinite(received) ||
-    now - captured >= 1_800_000 ||
-    now - received >= 1_800_000 ||
-    captured > now + 5000;
+  const evaluated = device.evaluatedAt ? Date.parse(device.evaluatedAt) : NaN;
+  const until = device.freshUntil ? Date.parse(device.freshUntil) : NaN;
+  const usableTime =
+    Number.isFinite(captured) &&
+    Number.isFinite(evaluated) &&
+    Number.isFinite(until) &&
+    elapsedMs !== undefined &&
+    Number.isFinite(elapsedMs) &&
+    elapsedMs >= 0 &&
+    typeof device.stale === 'boolean';
+  const freshness = !Number.isFinite(captured)
+    ? 'UNAVAILABLE'
+    : device.stale
+    ? 'OLD'
+    : usableTime
+    ? evaluated + elapsedMs! >= until
+      ? 'OLD'
+      : 'RECENT'
+    : 'UNAVAILABLE';
   const valid =
     device.batteryQuality === 'AVAILABLE' &&
     Number.isInteger(device.batteryLevel) &&
     device.batteryLevel !== null &&
     device.batteryLevel >= 0 &&
     device.batteryLevel <= 100;
-  const status =
-    {
-      CHARGING: '⚡ En charge',
-      DISCHARGING: 'En décharge',
-      FULL: 'Charge complète',
-      UNKNOWN: 'Charge inconnue',
-    }[device.batteryChargingStatus] ?? 'Charge inconnue';
-  const minutes = Number.isFinite(captured)
-    ? Math.max(0, Math.floor((now - captured) / 60000))
-    : null;
-  const age =
-    minutes === null
-      ? 'Date de mesure indisponible'
-      : minutes < 1
-      ? 'Mesuré à l’instant'
-      : 'Mesuré il y a ' + minutes + ' min';
+  const classification =
+    valid &&
+    ['NORMAL', 'LOW', 'CRITICAL'].includes(device.levelClassification ?? '')
+      ? device.levelClassification!
+      : 'UNAVAILABLE';
+  const age = {
+    RECENT: 'Mesure récente',
+    OLD: 'Mesure ancienne',
+    UNAVAILABLE: 'Fraîcheur indisponible',
+  }[freshness];
   return {
     text: valid
-      ? device.batteryLevel + ' % · ' + status
+      ? `${freshness === 'RECENT' ? '' : 'Dernier niveau : '}${
+          device.batteryLevel
+        } %`
       : 'Batterie indisponible',
-    age: age + (stale && minutes !== null ? ' — Mesure ancienne' : ''),
-    severity:
-      !valid || stale
-        ? 'UNKNOWN'
-        : ['CHARGING', 'FULL'].includes(device.batteryChargingStatus)
-        ? 'NORMAL'
-        : device.severity,
-    stale,
+    age,
+    freshness,
+    stale: freshness !== 'RECENT',
+    classification,
+    capturedLabel: Number.isFinite(captured)
+      ? moment(captured).tz('Africa/Casablanca').format('DD/MM/YYYY HH:mm')
+      : '—',
   };
 }

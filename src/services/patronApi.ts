@@ -1,4 +1,5 @@
 import {http} from './http';
+import {gpsElapsedTime} from './gpsClock';
 import type {
   AgentsResponse,
   DashboardResponse,
@@ -42,26 +43,33 @@ export async function getRoundDetail(id: string) {
   return response.data;
 }
 
-export async function getAgents(params: {
-  page?: number;
-  limit?: number;
-  period?: PeriodFilter;
-  siteId?: string;
-  search?: string;
-}) {
-  const response = await http.get<AgentsResponse>('/patron/agents', {params});
-  return response.data;
+export async function getAgents(
+  params: {
+    page?: number;
+    limit?: number;
+    period?: PeriodFilter;
+    siteId?: string;
+    search?: string;
+  },
+  signal?: AbortSignal,
+): Promise<AgentsResponse> {
+  const response = await http.get<AgentsResponse>('/patron/agents', {
+    params,
+    ...(signal ? {signal} : {}),
+  });
+  return {...response.data, receivedAt: gpsElapsedTime()};
 }
 
 export async function getAgentRounds(
   agentId: string,
   params: ListRoundsParams,
-) {
+  signal?: AbortSignal,
+): Promise<RoundsResponse> {
   const response = await http.get<RoundsResponse>(
     `/patron/agents/${agentId}/rounds`,
-    {params},
+    {params, ...(signal ? {signal} : {})},
   );
-  return response.data;
+  return {...response.data, receivedAt: gpsElapsedTime()};
 }
 
 export async function getSites(
