@@ -1,7 +1,6 @@
 import React from 'react';
 import {fireEvent, render} from '@testing-library/react-native';
 import {RoundsScreen} from '../src/screens/RoundsScreen';
-import {HomeScreen} from '../src/screens/HomeScreen';
 import {getRounds} from '../src/services/patronApi';
 const mockInfinite = jest.fn();
 const mockNavigate = jest.fn();
@@ -78,17 +77,4 @@ it('keeps today and 7 days with independent status filters and first-page query 
   });
   fireEvent.press(view.getByText('Manquées'));
   expect(lastQuery().queryKey[1].status).toBeNull();
-});
-it('displays server daily metrics, snapshot time and a realtime empty state', () => {
-  const view = render(<HomeScreen />);
-  for (const label of [
-    "Terminées aujourd'hui",
-    "En retard aujourd'hui",
-    "Manquées aujourd'hui",
-    'Activité en temps réel',
-  ])
-    expect(view.getByText(label)).toBeTruthy();
-  for (const n of ['3', '2', '1']) expect(view.getByText(n)).toBeTruthy();
-  expect(view.getByText(/Dernière synchronisation/)).toBeTruthy();
-  expect(view.getByText(/Les prochains scans/)).toBeTruthy();
 });

@@ -1,41 +1,55 @@
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {colors} from '../theme/colors';
-import {cardSurface} from '../theme/surfaces';
 
 export function MetricCard({
   label,
   value,
   tone,
+  detail,
 }: {
   label: string;
-  value: number;
-  tone: 'success' | 'warning' | 'danger';
+  value: number | null;
+  tone: 'success' | 'warning' | 'danger' | 'info';
+  detail?: string;
 }) {
   return (
     <View style={[styles.card, {borderTopColor: colors[tone]}]}>
-      <Text style={[styles.value, {color: colors[tone]}]}>{value}</Text>
+      <Text
+        style={[
+          styles.value,
+          {color: value === null ? colors.muted : colors[tone]},
+        ]}>
+        {value ?? '—'}
+      </Text>
       <Text style={styles.label}>{label}</Text>
+      {detail && <Text style={styles.detail}>{detail}</Text>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    ...cardSurface,
-    flex: 1,
-    minWidth: 92,
-    padding: 12,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 16,
+    flexGrow: 1,
+    flexBasis: '46%',
+    minWidth: 110,
+    padding: 14,
     borderTopWidth: 3,
-    minHeight: 110,
+    minHeight: 112,
   },
   value: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: '800',
   },
   label: {
     color: colors.text,
     fontSize: 12,
     marginTop: 4,
+    fontWeight: '700',
   },
+  detail: {color: colors.muted, fontSize: 10, marginTop: 5, lineHeight: 14},
 });

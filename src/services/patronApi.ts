@@ -22,8 +22,14 @@ export type ListRoundsParams = {
   search?: string;
 };
 
-export async function getDashboard() {
-  const response = await http.get<DashboardResponse>('/patron/dashboard');
+export async function getDashboard(
+  params?: {siteId?: string},
+  signal?: AbortSignal,
+) {
+  const response = await http.get<DashboardResponse>('/patron/dashboard', {
+    ...(params ? {params} : {}),
+    ...(signal ? {signal} : {}),
+  });
   return response.data;
 }
 
