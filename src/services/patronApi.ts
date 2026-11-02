@@ -1,4 +1,4 @@
-import { http } from './http';
+import {http} from './http';
 import type {
   AgentsResponse,
   DashboardResponse,
@@ -26,8 +26,14 @@ export async function getDashboard() {
   return response.data;
 }
 
-export async function getRounds(params: ListRoundsParams) {
-  const response = await http.get<RoundsResponse>('/patron/rounds', { params });
+export async function getRounds(
+  params: ListRoundsParams,
+  signal?: AbortSignal,
+): Promise<RoundsResponse> {
+  const response = await http.get<RoundsResponse>('/patron/rounds', {
+    params,
+    ...(signal ? {signal} : {}),
+  });
   return response.data;
 }
 
@@ -36,17 +42,35 @@ export async function getRoundDetail(id: string) {
   return response.data;
 }
 
-export async function getAgents(params: { page?: number; limit?: number; period?: PeriodFilter; siteId?: string; search?: string }) {
-  const response = await http.get<AgentsResponse>('/patron/agents', { params });
+export async function getAgents(params: {
+  page?: number;
+  limit?: number;
+  period?: PeriodFilter;
+  siteId?: string;
+  search?: string;
+}) {
+  const response = await http.get<AgentsResponse>('/patron/agents', {params});
   return response.data;
 }
 
-export async function getAgentRounds(agentId: string, params: ListRoundsParams) {
-  const response = await http.get<RoundsResponse>(`/patron/agents/${agentId}/rounds`, { params });
+export async function getAgentRounds(
+  agentId: string,
+  params: ListRoundsParams,
+) {
+  const response = await http.get<RoundsResponse>(
+    `/patron/agents/${agentId}/rounds`,
+    {params},
+  );
   return response.data;
 }
 
-export async function getSites() {
-  const response = await http.get<{ sites: SiteItem[] }>('/sites', { params: { status: 'ACTIVE' } });
+export async function getSites(
+  options?: {includeInactive?: boolean},
+  signal?: AbortSignal,
+): Promise<SiteItem[]> {
+  const response = await http.get<{sites: SiteItem[]}>('/sites', {
+    params: options?.includeInactive ? {} : {status: 'ACTIVE'},
+    ...(signal ? {signal} : {}),
+  });
   return response.data.sites;
 }

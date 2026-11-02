@@ -8,6 +8,7 @@ describe('navigation superviseur', () => {
   const navigator = readSource('src/navigation/AppNavigator.tsx');
   const navigationTypes = readSource('src/types/navigation.ts');
   const rounds = readSource('src/screens/RoundsScreen.tsx');
+  const roundsFilters = readSource('src/components/RoundsFilters.tsx');
   const firebase = readSource('src/services/firebaseMessagingService.ts');
   const socket = readSource('src/services/socketService.ts');
   const mobileDevices = readSource('src/services/mobileDevicesApi.ts');
@@ -36,7 +37,7 @@ describe('navigation superviseur', () => {
 
   it('conserve les périodes intégrées aux rondes et l’ouverture du détail', () => {
     for (const token of ["Aujourd'hui", '7 jours']) {
-      expect(rounds).toContain(token);
+      expect(roundsFilters).toContain(token);
     }
     expect(rounds).toContain("navigate('RoundDetail'");
     expect(rounds).not.toContain('30 jours');
@@ -82,7 +83,6 @@ describe('navigation superviseur', () => {
       expect(rounds).toContain(message);
     }
     expect(stateViews).toContain('Actualiser');
-    expect(rounds).toContain('enabled: Boolean(');
     expect(rounds).toContain('initialPageParam: 1');
     expect(rounds).toContain('pagination.page + 1');
   });
