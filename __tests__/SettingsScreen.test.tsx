@@ -1,24 +1,47 @@
 import React from 'react';
-import {act, fireEvent, render, waitFor} from '@testing-library/react-native';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  waitFor,
+} from '@testing-library/react-native';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {SettingsScreen} from '../src/screens/SettingsScreen';
 import {
   getNotificationPreferences,
   updateNotificationPreferences,
+  updateBatteryPreference,
 } from '../src/services/notificationPreferencesApi';
-import {Alert, StyleSheet} from 'react-native';
+import {Alert, NativeModules, StyleSheet} from 'react-native';
 import {logout} from '../src/services/authApi';
 import {revokeCurrentDevice} from '../src/services/mobileDevicesApi';
 import {disconnectSocket} from '../src/services/socketService';
-import type {ScanNotificationMode} from '../src/types/api';
+import type {ScanNotificationMode, User} from '../src/types/api';
 jest.mock('../src/services/notificationPreferencesApi', () => ({
   getNotificationPreferences: jest.fn(),
   updateNotificationPreferences: jest.fn(),
+  updateBatteryPreference: jest.fn(),
 }));
 jest.mock('../src/services/mobileDevicesApi', () => ({
   revokeCurrentDevice: jest.fn(),
 }));
-jest.mock('../src/stores/authStore', () => ({useAuthStore: () => null}));
+const admin: User = {
+  id: 'admin',
+  companyId: 'company',
+  roleType: 'COMPANY_ADMIN',
+  fullName: 'Responsable Test',
+  email: 'patron@example.test',
+  permissions: [],
+};
+let mockUser: User | null;
+jest.mock('../src/stores/authStore', () => ({
+  useAuthStore: (selector: (state: unknown) => unknown) =>
+    selector({user: mockUser, refreshToken: 'test-refresh'}),
+}));
+jest.mock('../src/components/CompanySupervisionSettings', () => ({
+  CompanySupervisionSettings: () => null,
+}));
 jest.mock('../src/services/authApi', () => ({logout: jest.fn()}));
 jest.mock('../src/services/socketService', () => ({
   disconnectSocket: jest.fn(),
@@ -26,10 +49,14 @@ jest.mock('../src/services/socketService', () => ({
 let serverMode: ScanNotificationMode;
 const clients: QueryClient[] = [];
 afterEach(() => {
+  cleanup();
   clients.splice(0).forEach(client => client.clear());
+  delete NativeModules.PatronAppInfo;
+  jest.restoreAllMocks();
 });
 beforeEach(() => {
   jest.clearAllMocks();
+  mockUser = {...admin};
   serverMode = 'ALL_SCANS';
   jest
     .mocked(getNotificationPreferences)
@@ -47,11 +74,20 @@ function screen() {
     },
   });
   clients.push(client);
-  return render(
+  const element = () => (
     <QueryClientProvider client={client}>
       <SettingsScreen />
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
+  const view = render(element());
+  return {
+    ...view,
+    client,
+    changeUser: (user: User | null) => {
+      mockUser = user;
+      view.rerender(element());
+    },
+  };
 }
 it.each([
   ['Tous les scans', 'ALL_SCANS'],
@@ -127,6 +163,9 @@ it('retains logout confirmation and only logs out after confirmation', async () 
   const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   const view = screen();
   await waitFor(() => expect(view.getByText('Tous les scans')).toBeTruthy());
+  view.client.setQueryData(['dashboard', 'private-snapshot'], {
+    privateData: true,
+  });
   fireEvent.press(view.getByRole('button', {name: 'Se déconnecter'}));
   expect(logout).not.toHaveBeenCalled();
   const buttons = alert.mock.calls[0][2]!;
@@ -137,5 +176,106 @@ it('retains logout confirmation and only logs out after confirmation', async () 
   expect(revokeCurrentDevice).toHaveBeenCalledTimes(1);
   expect(logout).toHaveBeenCalledTimes(1);
   expect(disconnectSocket).toHaveBeenCalledTimes(1);
+  expect(
+    view.client.getQueryCache().findAll({queryKey: ['dashboard']}),
+  ).toHaveLength(0);
   alert.mockRestore();
+});
+
+it('shows actual account and build metadata without API URLs or session secrets', async () => {
+  NativeModules.PatronAppInfo = {
+    versionName: '9.8.7-staging',
+    versionCode: 123,
+  };
+  const view = screen();
+  await view.findByText('Tous les scans');
+  for (const label of [
+    'Mon compte',
+    admin.fullName,
+    admin.email,
+    'Responsable société',
+    'À propos',
+    '9.8.7-staging',
+    '123',
+    'Développement',
+    'SADITECH PRO',
+    'Réglages société',
+  ]) {
+    expect(view.getByText(label)).toBeTruthy();
+  }
+  expect(
+    view.queryByText(/test-refresh|10\.0\.2\.2|api-contronde|https?:\/\//),
+  ).toBeNull();
+  expect(view.queryByText(/Synchroniser|Synchronisation manuelle/)).toBeNull();
+});
+it('retains the separate battery preference without changing the selected round preference', async () => {
+  jest
+    .mocked(getNotificationPreferences)
+    .mockResolvedValue({
+      scanNotificationMode: 'LATE_ONLY',
+      batteryAlertsEnabled: false,
+    });
+  jest
+    .mocked(updateBatteryPreference)
+    .mockResolvedValue({
+      scanNotificationMode: 'LATE_ONLY',
+      batteryAlertsEnabled: true,
+    });
+  const view = screen();
+  await view.findByLabelText('Recevoir les alertes batterie');
+  fireEvent(
+    view.getByLabelText('Recevoir les alertes batterie'),
+    'valueChange',
+    true,
+  );
+  await view.findByText('Préférence batterie sauvegardée.');
+  expect(jest.mocked(updateBatteryPreference).mock.calls[0][0]).toBe(true);
+  expect(updateNotificationPreferences).not.toHaveBeenCalled();
+  expect(
+    view.getByRole('radio', {name: 'Retards uniquement'}).props
+      .accessibilityState.checked,
+  ).toBe(true);
+});
+it('keeps another account isolated from a late personal preference response', async () => {
+  let resolve!: (value: {scanNotificationMode: ScanNotificationMode}) => void;
+  jest.mocked(updateNotificationPreferences).mockReturnValue(
+    new Promise(yes => {
+      resolve = yes;
+    }),
+  );
+  const view = screen();
+  await view.findByText('Tous les scans');
+  fireEvent.press(view.getByText('Retards uniquement'));
+  jest
+    .mocked(getNotificationPreferences)
+    .mockResolvedValue({scanNotificationMode: 'DISABLED'});
+  view.changeUser({
+    ...admin,
+    id: 'other',
+    companyId: 'other-company',
+    fullName: 'Autre responsable',
+  });
+  await waitFor(() =>
+    expect(
+      view.getByRole('radio', {name: 'Notifications désactivées'}).props
+        .accessibilityState.checked,
+    ).toBe(true),
+  );
+  await act(async () => resolve({scanNotificationMode: 'LATE_ONLY'}));
+  expect(
+    view.getByRole('radio', {name: 'Notifications désactivées'}).props
+      .accessibilityState.checked,
+  ).toBe(true);
+  expect(view.queryByText('Préférence sauvegardée.')).toBeNull();
+  expect(view.queryByText(admin.fullName)).toBeNull();
+});
+it.each([
+  null,
+  {...admin, roleType: 'AGENT' as const},
+  {...admin, companyId: null},
+])('does not load private settings for an unauthorized identity', user => {
+  mockUser = user;
+  const view = screen();
+  expect(getNotificationPreferences).not.toHaveBeenCalled();
+  expect(view.queryByText('Mon compte')).toBeNull();
 });

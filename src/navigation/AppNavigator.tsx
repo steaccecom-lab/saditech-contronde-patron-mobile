@@ -1,5 +1,5 @@
-import React, {useEffect} from 'react';
-import {AppState, Text} from 'react-native';
+import React, {useCallback, useEffect} from 'react';
+import {AppState} from 'react-native';
 import {
   NavigationContainer,
   useNavigationContainerRef,
@@ -19,53 +19,59 @@ import {colors} from '../theme/colors';
 import {useAuthStore} from '../stores/authStore';
 import {connectSocket, disconnectSocket} from '../services/socketService';
 import {setupFirebaseMessaging} from '../services/firebaseMessagingService';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {
+  AgentsIcon,
+  HomeIcon,
+  RoundsIcon,
+  SettingsIcon,
+} from '../components/NavigationIcon';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-function DotIcon({color}: {color: string}) {
-  return <Text style={{color}}>●</Text>;
-}
-
-function DiamondIcon({color}: {color: string}) {
-  return <Text style={{color}}>◆</Text>;
-}
-
-function SquareIcon({color}: {color: string}) {
-  return <Text style={{color}}>■</Text>;
-}
-
 function MainTabs() {
+  const insets = useSafeAreaInsets();
+  const bottom = Math.max(8, insets.bottom);
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.navy,
         tabBarInactiveTintColor: colors.muted,
         tabBarActiveBackgroundColor: colors.primarySoft,
-        tabBarItemStyle: {borderRadius: 12, marginHorizontal: 4},
-        tabBarLabelStyle: {fontSize: 12, fontWeight: '700'},
-        tabBarStyle: {minHeight: 62, paddingBottom: 8, paddingTop: 6},
+        tabBarItemStyle: {borderRadius: 14, marginHorizontal: 2, marginTop: 4},
+        tabBarLabelStyle: {fontSize: 11, fontWeight: '700', marginBottom: 4},
+        tabBarLabelPosition: 'below-icon',
+        tabBarHideOnKeyboard: true,
+        tabBarStyle: {
+          height: 60 + bottom,
+          paddingBottom: bottom,
+          paddingTop: 2,
+          paddingHorizontal: 6,
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+        },
       }}>
       <Tab.Screen
         name="Home"
         component={HomeScreen}
-        options={{title: 'Accueil', tabBarIcon: DotIcon}}
+        options={{title: 'Accueil', tabBarIcon: HomeIcon}}
       />
       <Tab.Screen
         name="Rounds"
         component={RoundsScreen}
-        options={{title: 'Rondes', tabBarIcon: DiamondIcon}}
+        options={{title: 'Rondes', tabBarIcon: RoundsIcon}}
       />
       <Tab.Screen
         name="Agents"
         component={AgentsScreen}
-        options={{title: 'Agents', tabBarIcon: SquareIcon}}
+        options={{title: 'Agents', tabBarIcon: AgentsIcon}}
       />
       <Tab.Screen
         name="Settings"
         component={SettingsScreen}
-        options={{title: 'Paramètres', tabBarIcon: DotIcon}}
+        options={{title: 'Paramètres', tabBarIcon: SettingsIcon}}
       />
     </Tab.Navigator>
   );
@@ -86,13 +92,19 @@ export function AppNavigator() {
 
     connectSocket(queryClient);
     let cleanup: (() => void) | undefined;
+    let disposed = false;
     setupFirebaseMessaging(queryClient)
       .then(unsubscribe => {
-        cleanup = unsubscribe;
+        if (disposed) {
+          unsubscribe();
+        } else {
+          cleanup = unsubscribe;
+        }
       })
       .catch(() => undefined);
 
     return () => {
+      disposed = true;
       cleanup?.();
       disconnectSocket();
     };
@@ -127,16 +139,18 @@ export function AppNavigator() {
     return () => subscription.remove();
   }, [queryClient, user]);
 
-  useEffect(() => {
+  const openPendingRound = useCallback(() => {
     if (user && pendingRoundId && navigationRef.isReady()) {
       navigationRef.navigate('RoundDetail', {id: pendingRoundId});
       setPendingRoundId(null);
     }
   }, [navigationRef, pendingRoundId, setPendingRoundId, user]);
+  useEffect(openPendingRound, [openPendingRound]);
 
   return (
     <NavigationContainer
       ref={navigationRef}
+      onReady={openPendingRound}
       linking={{
         prefixes: ['controndepatron://'],
         config: {
@@ -145,9 +159,16 @@ export function AppNavigator() {
           },
         },
       }}>
-      <Stack.Navigator>
+      <Stack.Navigator
+        screenOptions={{
+          headerStyle: {backgroundColor: colors.navy},
+          headerTintColor: colors.surface,
+          headerTitleStyle: {fontSize: 18, fontWeight: '700'},
+          contentStyle: {backgroundColor: colors.background},
+        }}>
         {user ? (
-          <>
+          <Stack.Group
+            navigationKey={`${user.companyId}:${user.id}:${user.roleType}`}>
             <Stack.Screen
               name="Main"
               component={MainTabs}
@@ -163,7 +184,7 @@ export function AppNavigator() {
               component={AgentRoundsScreen}
               options={{title: 'Historique agent'}}
             />
-          </>
+          </Stack.Group>
         ) : (
           <Stack.Screen
             name="SignIn"

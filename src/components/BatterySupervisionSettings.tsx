@@ -193,18 +193,23 @@ export function BatterySupervisionSettings({
 }
 const styles = StyleSheet.create({
   group: {
-    marginTop: 24,
-    paddingTop: 20,
+    marginTop: 16,
+    paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
   title: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
-    color: colors.text,
+    color: colors.navy,
     marginBottom: 10,
   },
-  description: {color: colors.muted, lineHeight: 21, marginBottom: 10},
+  description: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 21,
+    marginBottom: 10,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -217,15 +222,15 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     color: colors.text,
     marginTop: 8,
   },
   button: {
     minHeight: 48,
-    backgroundColor: colors.primary,
-    borderRadius: 8,
+    backgroundColor: colors.navy,
+    borderRadius: 12,
     padding: 12,
     justifyContent: 'center',
     marginTop: 8,

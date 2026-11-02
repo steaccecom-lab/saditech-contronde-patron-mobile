@@ -1,11 +1,11 @@
 import {http} from './http';
 import type {ScanNotificationMode} from '../types/api';
 
-export async function getNotificationPreferences() {
+export async function getNotificationPreferences(signal?: AbortSignal) {
   const response = await http.get<{
     scanNotificationMode: ScanNotificationMode;
     batteryAlertsEnabled?: boolean;
-  }>('/notification-preferences');
+  }>('/notification-preferences', signal ? {signal} : {});
   return response.data;
 }
 

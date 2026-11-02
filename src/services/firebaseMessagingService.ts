@@ -8,13 +8,31 @@ import {useAuthStore} from '../stores/authStore';
 export async function setupFirebaseMessaging(
   queryClient: QueryClient,
 ): Promise<() => void> {
+  // Token rotation keeps the same user object. Logout/account replacement does not.
+  const owner = useAuthStore.getState().user;
+  const isCurrent = () =>
+    Boolean(owner) && useAuthStore.getState().user === owner;
+  if (!isCurrent()) {
+    return () => undefined;
+  }
   await requestNotificationPermission();
-  await registerCurrentFcmToken();
+  if (!isCurrent()) {
+    return () => undefined;
+  }
+  await registerCurrentFcmToken(isCurrent);
+  if (!isCurrent()) {
+    return () => undefined;
+  }
 
   const unsubscribeToken = messaging().onTokenRefresh(token => {
-    registerDevice(token).catch(() => undefined);
+    if (isCurrent()) {
+      registerDevice(token).catch(() => undefined);
+    }
   });
   const unsubscribeMessage = messaging().onMessage(async message => {
+    if (!isCurrent()) {
+      return;
+    }
     const eventId = message.data?.eventId;
     const type = message.data?.type;
     if (
@@ -33,10 +51,14 @@ export async function setupFirebaseMessaging(
 
   messaging().setBackgroundMessageHandler(async () => undefined);
   const opened = await messaging().getInitialNotification();
-  handleNotificationOpen(opened?.data);
-  const unsubscribeOpen = messaging().onNotificationOpenedApp(message =>
-    handleNotificationOpen(message.data),
-  );
+  if (isCurrent()) {
+    handleNotificationOpen(opened?.data);
+  }
+  const unsubscribeOpen = messaging().onNotificationOpenedApp(message => {
+    if (isCurrent()) {
+      handleNotificationOpen(message.data);
+    }
+  });
 
   return () => {
     unsubscribeToken();
@@ -56,9 +78,11 @@ async function requestNotificationPermission(): Promise<void> {
   await messaging().requestPermission();
 }
 
-async function registerCurrentFcmToken(): Promise<void> {
+async function registerCurrentFcmToken(
+  isCurrent: () => boolean,
+): Promise<void> {
   const token = await messaging().getToken();
-  if (token) {
+  if (token && isCurrent()) {
     await registerDevice(token);
   }
 }

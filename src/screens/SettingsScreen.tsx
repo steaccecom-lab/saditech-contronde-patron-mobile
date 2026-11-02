@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {CompanySupervisionSettings} from '../components/CompanySupervisionSettings';
 import {
   Alert,
@@ -20,9 +20,10 @@ import {revokeCurrentDevice} from '../services/mobileDevicesApi';
 import {disconnectSocket} from '../services/socketService';
 import {resetEventDedup} from '../services/eventDedup';
 import {useAuthStore} from '../stores/authStore';
-import type {ScanNotificationMode} from '../types/api';
-import {ErrorView, LoadingView} from '../components/StateViews';
+import type {ScanNotificationMode, User} from '../types/api';
+import {EmptyView, ErrorView, LoadingView} from '../components/StateViews';
 import {colors} from '../theme/colors';
+import {readAppInfo} from '../services/appInfo';
 
 const options: ScanNotificationMode[] = [
   'ALL_SCANS',
@@ -43,19 +44,64 @@ const optionLabels: Record<(typeof options)[number], string> = {
 
 export function SettingsScreen() {
   const user = useAuthStore(state => state.user);
+  if (!user) {
+    return (
+      <EmptyView label="Connexion requise pour consulter les paramètres." />
+    );
+  }
+  if (
+    !user.companyId ||
+    !['COMPANY_ADMIN', 'SUPERVISOR'].includes(user.roleType)
+  ) {
+    return (
+      <ErrorView label="Vous n'avez pas l'autorisation de consulter ces paramètres." />
+    );
+  }
+  return (
+    <SettingsContent
+      key={`${user.companyId}:${user.id}:${user.roleType}:${[
+        ...user.permissions,
+      ]
+        .sort()
+        .join(',')}`}
+      user={user}
+    />
+  );
+}
+
+function SettingsContent({user}: {user: User}) {
   const queryClient = useQueryClient();
   const refreshToken = useAuthStore(state => state.refreshToken);
   const [saved, setSaved] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const queryKey = [
+    'notificationPreferences',
+    user.companyId,
+    user.id,
+    user.roleType,
+    [...user.permissions].sort(),
+  ];
+  const about = readAppInfo();
   const query = useQuery({
-    queryKey: ['notificationPreferences'],
-    queryFn: getNotificationPreferences,
+    queryKey,
+    queryFn: ({signal}) => getNotificationPreferences(signal),
   });
   const mutation = useMutation({
     mutationFn: updateNotificationPreferences,
     onMutate: () => setSaved(false),
     onSuccess: data => {
+      if (!mounted.current) {
+        return;
+      }
       setSaved(true);
-      queryClient.setQueryData(['notificationPreferences'], data);
+      queryClient.setQueryData(queryKey, data);
       queryClient.invalidateQueries({queryKey: ['notificationPreferences']});
     },
   });
@@ -63,15 +109,30 @@ export function SettingsScreen() {
   const batteryMutation = useMutation({
     mutationFn: updateBatteryPreference,
     onSuccess: data => {
-      queryClient.setQueryData(['notificationPreferences'], data);
+      if (mounted.current) {
+        queryClient.setQueryData(queryKey, data);
+      }
     },
   });
   const doLogout = async () => {
-    await revokeCurrentDevice().catch(() => undefined);
-    await logout(refreshToken);
-    disconnectSocket();
-    resetEventDedup();
-    queryClient.clear();
+    if (loggingOut) {
+      return;
+    }
+    setLoggingOut(true);
+    try {
+      await revokeCurrentDevice().catch(() => undefined);
+      await logout(refreshToken);
+      mounted.current = false;
+      disconnectSocket();
+      resetEventDedup();
+      queryClient.clear();
+    } catch {
+      Alert.alert('Déconnexion impossible', 'Réessayez de vous déconnecter.');
+    } finally {
+      if (mounted.current) {
+        setLoggingOut(false);
+      }
+    }
   };
 
   return (
@@ -79,13 +140,27 @@ export function SettingsScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled">
-      <Text style={styles.title}>Paramètres</Text>
-      {user && (
-        <CompanySupervisionSettings
-          key={`${user.companyId}:${user.id}`}
-          user={user}
-        />
-      )}
+      <View style={styles.header}>
+        <Text style={styles.title}>Paramètres</Text>
+        <Text style={styles.subtitle}>Votre compte et votre supervision</Text>
+      </View>
+      <View style={styles.card}>
+        <Text style={styles.section}>Mon compte</Text>
+        <Text style={styles.infoLabel}>Nom</Text>
+        <Text selectable style={styles.infoValue}>
+          {user.fullName.trim() || 'Non renseigné'}
+        </Text>
+        <Text style={styles.infoLabel}>Adresse e-mail</Text>
+        <Text selectable style={styles.infoValue}>
+          {user.email.trim() || 'Non renseignée'}
+        </Text>
+        <Text style={styles.infoLabel}>Rôle</Text>
+        <Text style={styles.infoValue}>
+          {user.roleType === 'SUPERVISOR'
+            ? 'Superviseur'
+            : 'Responsable société'}
+        </Text>
+      </View>
       <View style={styles.card}>
         <Text style={styles.section}>Mes notifications</Text>
         {query.isLoading ? <LoadingView /> : null}
@@ -95,7 +170,7 @@ export function SettingsScreen() {
             onRetry={query.refetch}
           />
         ) : null}
-        {query.data && (
+        {query.data && !query.isError && (
           <>
             <Text style={styles.description}>
               Choisissez les événements qui vous seront signalés sur vos
@@ -120,7 +195,11 @@ export function SettingsScreen() {
                   <Switch
                     accessibilityLabel="Recevoir les alertes batterie"
                     value={query.data.batteryAlertsEnabled}
-                    disabled={batteryMutation.isPending || mutation.isPending}
+                    disabled={
+                      batteryMutation.isPending ||
+                      mutation.isPending ||
+                      loggingOut
+                    }
                     onValueChange={enabled => batteryMutation.mutate(enabled)}
                   />
                 </View>
@@ -147,9 +226,16 @@ export function SettingsScreen() {
                   accessibilityRole="radio"
                   accessibilityState={{
                     checked: selected,
-                    disabled: mutation.isPending || batteryMutation.isPending,
+                    disabled:
+                      mutation.isPending ||
+                      batteryMutation.isPending ||
+                      loggingOut,
                   }}
-                  disabled={mutation.isPending || batteryMutation.isPending}
+                  disabled={
+                    mutation.isPending ||
+                    batteryMutation.isPending ||
+                    loggingOut
+                  }
                   style={[styles.option, selected && styles.selected]}
                   onPress={() => mutation.mutate(option)}>
                   <Text
@@ -179,18 +265,43 @@ export function SettingsScreen() {
           </>
         )}
       </View>
+      <Text style={styles.groupTitle}>Réglages société</Text>
+      <View style={styles.company}>
+        <CompanySupervisionSettings user={user} />
+      </View>
+      <View style={styles.card}>
+        <Text style={styles.section}>À propos</Text>
+        <Text style={styles.appName}>Contronde Patron</Text>
+        {[
+          ['Version', about.versionName],
+          ['Code de version', about.versionCode],
+          ['Environnement', about.environment],
+          ['Éditeur', about.publisher],
+        ].map(([label, value]) => (
+          <View key={label} style={styles.infoRow}>
+            <Text style={styles.aboutLabel}>{label}</Text>
+            <Text selectable style={styles.aboutValue}>
+              {value}
+            </Text>
+          </View>
+        ))}
+      </View>
       <View style={styles.card}>
         <Text style={styles.section}>Session</Text>
         <TouchableOpacity
           accessibilityRole="button"
-          style={styles.logout}
+          accessibilityState={{disabled: loggingOut}}
+          disabled={loggingOut}
+          style={[styles.logout, loggingOut && styles.disabled]}
           onPress={() =>
             Alert.alert('Déconnexion', 'Voulez-vous vous déconnecter ?', [
-              {text: 'Annuler'},
+              {text: 'Annuler', style: 'cancel'},
               {text: 'Déconnexion', onPress: doLogout},
             ])
           }>
-          <Text style={styles.logoutText}>Se déconnecter</Text>
+          <Text style={styles.logoutText}>
+            {loggingOut ? 'Déconnexion…' : 'Se déconnecter'}
+          </Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -202,50 +313,96 @@ const styles = StyleSheet.create({
   batteryRow: {flexDirection: 'row', alignItems: 'center', minHeight: 48},
   batteryLabel: {flex: 1},
   container: {flex: 1, backgroundColor: colors.background},
-  content: {padding: 16, paddingBottom: 40},
+  content: {paddingBottom: 28},
+  header: {
+    backgroundColor: colors.navy,
+    padding: 18,
+    paddingBottom: 22,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    marginBottom: 16,
+  },
+  subtitle: {color: '#D9E1EC', fontSize: 13, marginTop: 5},
+  company: {marginHorizontal: 16},
+  groupTitle: {
+    marginHorizontal: 18,
+    marginBottom: 8,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.muted,
+  },
+  infoLabel: {color: colors.muted, fontSize: 11, marginTop: 10},
+  infoValue: {
+    color: colors.navy,
+    fontSize: 15,
+    fontWeight: '600',
+    marginTop: 3,
+  },
+  appName: {
+    color: colors.navy,
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  infoRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 7},
+  aboutLabel: {color: colors.muted, fontSize: 12, flexGrow: 1},
+  aboutValue: {
+    color: colors.navy,
+    fontSize: 12,
+    fontWeight: '700',
+    flexShrink: 1,
+  },
+  disabled: {opacity: 0.5},
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 24,
+    borderRadius: 18,
+    padding: 14,
+    marginHorizontal: 16,
+    marginBottom: 16,
   },
-  description: {color: colors.muted, lineHeight: 22, marginBottom: 16},
+  description: {
+    color: colors.muted,
+    lineHeight: 20,
+    fontSize: 13,
+    marginBottom: 12,
+  },
   error: {color: colors.danger, lineHeight: 22},
   title: {
     fontSize: 28,
-    fontWeight: '900',
-    color: colors.text,
-    marginBottom: 20,
+    fontWeight: '800',
+    color: colors.surface,
   },
   section: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: colors.text,
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.navy,
     marginBottom: 10,
   },
   option: {
-    minHeight: 58,
-    borderRadius: 14,
+    minHeight: 48,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     justifyContent: 'center',
-    padding: 16,
-    marginBottom: 10,
+    padding: 12,
+    marginBottom: 8,
   },
-  selected: {borderColor: colors.primary, backgroundColor: '#EAF2FF'},
-  optionText: {color: colors.text, fontSize: 16, fontWeight: '700'},
-  selectedText: {color: colors.primary},
+  selected: {borderColor: colors.navy, backgroundColor: colors.primarySoft},
+  optionText: {color: colors.text, fontSize: 14, fontWeight: '700'},
+  selectedText: {color: colors.navy},
   saved: {color: colors.success, marginTop: 4, fontWeight: '700'},
   logout: {
     minHeight: 54,
-    borderRadius: 8,
-    backgroundColor: colors.danger,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 4,
   },
-  logoutText: {color: colors.surface, fontSize: 17, fontWeight: '800'},
+  logoutText: {color: colors.danger, fontSize: 15, fontWeight: '700'},
 });
