@@ -2,15 +2,10 @@ import React from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import type {AgentItem} from '../types/api';
 import type {GpsIndicator} from '../utils/agentGpsPresentation';
-import {BatteryDevices} from './BatteryDevices';
+import {AgentTelemetry} from './AgentTelemetry';
 import {colors} from '../theme/colors';
-import {formatPlannedDateTime, statusLabel} from '../utils/format';
+import {statusLabel} from '../utils/format';
 
-const gpsLabels = {
-  RECENT: 'Position récente',
-  OLD: 'Position ancienne',
-  UNAVAILABLE: 'Position indisponible',
-};
 export function AgentCard({
   agent,
   receivedAt,
@@ -35,6 +30,11 @@ export function AgentCard({
       : last
       ? statusLabel(last.status)
       : null;
+  const measured =
+    last &&
+    Number.isFinite(last.progress.validated) &&
+    Number.isFinite(last.progress.total) &&
+    last.progress.total > 0;
   return (
     <TouchableOpacity
       accessibilityRole="button"
@@ -48,58 +48,45 @@ export function AgentCard({
             {agent.name.trim().slice(0, 1).toLocaleUpperCase('fr') || '—'}
           </Text>
         </View>
-        <Text style={styles.name}>{agent.name}</Text>
+        <Text style={styles.name} numberOfLines={2}>
+          {agent.name}
+        </Text>
+        {last && (
+          <Text
+            style={styles.site}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            accessibilityLabel={`Site de la dernière ronde : ${last.siteName}`}>
+            {last.siteName}
+          </Text>
+        )}
         <Text accessible={false} style={styles.chevron}>
           ›
         </Text>
       </View>
-      {last ? (
-        <View style={styles.context}>
-          <Text style={styles.label}>Site de la dernière ronde</Text>
-          <Text style={styles.site}>{last.siteName}</Text>
-          <Text style={styles.meta}>
-            {last.roundName} · {formatPlannedDateTime(last.plannedStartAt)}
-          </Text>
-          <Text style={styles.meta}>
-            {status} · {last.progress.validated}/{last.progress.total} points
-            {last.outOfOrderCount > 0
-              ? ` · ${last.outOfOrderCount} hors ordre`
-              : ''}
-          </Text>
-        </View>
-      ) : (
-        <Text style={styles.meta}>Aucune ronde sur cette période.</Text>
-      )}
-      <View style={styles.telemetry}>
-        <Text style={styles.label}>Batterie</Text>
-        <BatteryDevices
-          devices={agent.batteryDevices}
-          compact
-          receivedAt={receivedAt}
-          nowElapsed={nowElapsed}
-        />
-        <View style={styles.gps}>
-          <Text
-            style={[
-              styles.dot,
-              {
-                color:
-                  gps === 'RECENT'
-                    ? colors.success
-                    : gps === 'OLD'
-                    ? colors.warning
-                    : colors.muted,
-              },
-            ]}
-            accessible={false}>
-            ●
-          </Text>
-          <Text style={styles.meta}>GPS · {gpsLabels[gps]}</Text>
-        </View>
+      <View style={styles.round}>
+        {last ? (
+          <>
+            <Text style={styles.status}>{status}</Text>
+            <Text style={styles.meta}>
+              {measured
+                ? `${last.progress.validated}/${last.progress.total} points`
+                : 'Progression indisponible'}
+              {last.outOfOrderCount > 0
+                ? ` · ${last.outOfOrderCount} hors ordre`
+                : ''}
+            </Text>
+          </>
+        ) : (
+          <Text style={styles.meta}>Aucune ronde sur cette période.</Text>
+        )}
       </View>
-      <Text style={styles.history}>
-        Historique des rondes <Text accessible={false}>›</Text>
-      </Text>
+      <AgentTelemetry
+        devices={agent.batteryDevices}
+        receivedAt={receivedAt}
+        nowElapsed={nowElapsed}
+        gps={gps}
+      />
     </TouchableOpacity>
   );
 }
@@ -108,49 +95,52 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 12,
+    borderRadius: 14,
+    padding: 10,
+    marginBottom: 8,
+    minHeight: 88,
   },
-  identity: {flexDirection: 'row', alignItems: 'center', gap: 10},
+  identity: {flexDirection: 'row', alignItems: 'center', gap: 7},
   avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 9,
     backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  initial: {color: colors.navy, fontWeight: '800', fontSize: 16},
+  initial: {color: colors.navy, fontWeight: '800', fontSize: 13},
   name: {
     color: colors.navy,
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '800',
     flex: 1,
     minWidth: 0,
   },
-  chevron: {fontSize: 24, color: colors.primary},
-  context: {marginTop: 10},
-  label: {
+  site: {
     color: colors.muted,
     fontSize: 11,
-    fontWeight: '600',
-    marginBottom: 3,
+    flexBasis: '34%',
+    flexShrink: 1,
+    minWidth: 0,
   },
-  site: {color: colors.navy, fontSize: 14, fontWeight: '700'},
-  meta: {color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: 3},
-  telemetry: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 10,
-    marginTop: 10,
+  chevron: {fontSize: 20, color: colors.primary},
+  round: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
   },
-  gps: {flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 7},
-  dot: {fontSize: 9},
-  history: {
-    color: colors.primary,
-    fontSize: 12,
+  status: {
+    color: colors.navy,
+    fontSize: 11,
     fontWeight: '700',
-    marginTop: 10,
+    backgroundColor: colors.primarySoft,
+    borderRadius: 5,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    flexShrink: 1,
   },
+  meta: {color: colors.muted, fontSize: 11, flexShrink: 1},
 });

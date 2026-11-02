@@ -78,9 +78,6 @@ export function AgentsFilters({
           </TouchableOpacity>
         ))}
       </View>
-      <Text style={styles.caption}>
-        Contexte de la dernière ronde sur la période choisie.
-      </Text>
       <Modal
         visible={open}
         transparent
@@ -138,18 +135,18 @@ export function AgentsFilters({
   );
 }
 const styles = StyleSheet.create({
-  filters: {marginHorizontal: 16, marginTop: 14, marginBottom: 12},
+  filters: {marginHorizontal: 16, marginTop: 8, marginBottom: 6},
   search: {
-    minHeight: 48,
-    borderRadius: 14,
+    minHeight: 44,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     paddingHorizontal: 14,
-    fontSize: 15,
+    fontSize: 14,
     color: colors.navy,
   },
-  row: {flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10},
+  row: {flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 4},
   site: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -182,7 +179,6 @@ const styles = StyleSheet.create({
   periodText: {color: colors.navy, fontSize: 12, fontWeight: '700'},
   selected: {backgroundColor: colors.navy},
   selectedText: {color: colors.surface, fontSize: 12, fontWeight: '700'},
-  caption: {color: colors.muted, fontSize: 11, marginTop: 8, lineHeight: 16},
   scrim: {
     flex: 1,
     justifyContent: 'center',

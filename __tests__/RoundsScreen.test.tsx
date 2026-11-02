@@ -205,7 +205,7 @@ it('cancels an uncommitted date edit and can reset all filters', async () => {
   fireEvent.changeText(view.getByLabelText('Date de début'), '01/01/2020');
   fireEvent.press(view.getByText('Fermer'));
   expect(view.getByText('7 jours').parent?.props).toBeDefined();
-  fireEvent.press(view.getByText('Réinitialiser les filtres'));
+  fireEvent.press(view.getByLabelText('Réinitialiser les filtres'));
   await waitFor(() =>
     expect(getRounds).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -235,11 +235,7 @@ it('shows incomplete server results without inventing an INCOMPLETE API filter',
       expect.anything(),
     ),
   );
-  expect(
-    view.getByText(
-      'Les rondes incomplètes restent identifiées dans les résultats.',
-    ),
-  ).toBeTruthy();
+  expect(await view.findByText('Incomplète')).toBeTruthy();
   expect(
     jest
       .mocked(getRounds)
@@ -474,7 +470,7 @@ it('isolates accounts, resets filters and rejects display of a late response fro
     );
   });
   expect(view.queryByText('Ancienne réponse privée')).toBeNull();
-  expect(view.queryByText('Réinitialiser les filtres')).toBeNull();
+  expect(view.queryByLabelText('Réinitialiser les filtres')).toBeNull();
   const keys = view.client
     .getQueryCache()
     .findAll({queryKey: ['rounds']})

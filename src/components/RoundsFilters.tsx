@@ -79,20 +79,35 @@ export function RoundsFilters({
   };
   return (
     <View style={styles.panel}>
-      <TouchableOpacity
-        accessibilityRole="button"
-        accessibilityLabel="Filtrer par site"
-        onPress={() => setModal('sites')}
-        style={styles.siteButton}>
-        <Text style={styles.fieldLabel}>Site</Text>
-        <Text style={styles.siteName}>
-          {selectedSite?.name ??
-            (filter.siteId ? 'Site sélectionné' : 'Tous les sites')}
-        </Text>
-        <Text accessible={false} style={styles.chevron}>
-          ⌄
-        </Text>
-      </TouchableOpacity>
+      <View style={styles.siteRow}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Filtrer par site"
+          onPress={() => setModal('sites')}
+          style={styles.siteButton}>
+          <Text style={styles.fieldLabel}>Site</Text>
+          <Text style={styles.siteName} numberOfLines={1} ellipsizeMode="tail">
+            {selectedSite?.name ??
+              (filter.siteId ? 'Site sélectionné' : 'Tous les sites')}
+          </Text>
+          <Text accessible={false} style={styles.chevron}>
+            ⌄
+          </Text>
+        </TouchableOpacity>
+        {(filter.siteId || filter.period !== 'today' || filter.status) && (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Réinitialiser les filtres"
+            onPress={() => onChange({period: 'today'})}
+            style={styles.reset}>
+            <Text
+              accessible={false}
+              style={[styles.resetText, styles.resetIcon]}>
+              ↺
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
       <View style={styles.periods}>
         {[
           {label: "Aujourd'hui", period: 'today'},
@@ -146,6 +161,7 @@ export function RoundsFilters({
       )}
       <ScrollView
         horizontal
+        accessibilityLabel="Filtres de statut des rondes"
         style={styles.statusScroll}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.statuses}>
@@ -175,19 +191,6 @@ export function RoundsFilters({
           </TouchableOpacity>
         ))}
       </ScrollView>
-      {filter.status === 'FINISHED' && (
-        <Text style={styles.hint}>
-          Les rondes incomplètes restent identifiées dans les résultats.
-        </Text>
-      )}
-      {(filter.siteId || filter.period !== 'today' || filter.status) && (
-        <TouchableOpacity
-          accessibilityRole="button"
-          onPress={() => onChange({period: 'today'})}
-          style={styles.reset}>
-          <Text style={styles.resetText}>Réinitialiser les filtres</Text>
-        </TouchableOpacity>
-      )}
       <Modal
         visible={modal !== null}
         transparent
@@ -296,13 +299,13 @@ export function RoundsFilters({
 const styles = StyleSheet.create({
   panel: {
     marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 12,
-    padding: 12,
+    marginTop: 8,
+    marginBottom: 6,
+    padding: 8,
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: 14,
   },
   label: {
     fontWeight: '700',
@@ -312,24 +315,26 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   siteButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 48,
+    minHeight: 44,
     gap: 8,
     borderRadius: 12,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     backgroundColor: colors.background,
   },
   siteName: {
     color: colors.navy,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     flexShrink: 1,
     flexGrow: 1,
   },
   chevron: {color: colors.navy, fontSize: 20},
   fieldLabel: {color: colors.muted, fontSize: 12, fontWeight: '600'},
-  periods: {flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10},
+  siteRow: {flexDirection: 'row', alignItems: 'center', gap: 4},
+  periods: {flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4},
   period: {
     flexGrow: 1,
     minHeight: 44,
@@ -339,21 +344,27 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: colors.background,
   },
-  statusScroll: {marginTop: 10},
-  statuses: {gap: 6, alignItems: 'center'},
+  statusScroll: {marginTop: 4},
+  statuses: {gap: 4, alignItems: 'center'},
   chip: {
     minHeight: 44,
     borderRadius: 22,
     justifyContent: 'center',
-    paddingHorizontal: 13,
+    paddingHorizontal: 10,
     backgroundColor: colors.background,
   },
   chipText: {color: colors.navy, fontSize: 12, fontWeight: '700'},
   selected: {backgroundColor: colors.navy},
-  selectedText: {color: colors.surface, fontWeight: '700', fontSize: 13},
+  selectedText: {color: colors.surface, fontWeight: '700', fontSize: 12},
   hint: {color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: 7},
-  reset: {minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start'},
+  reset: {
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   resetText: {color: colors.primary, fontSize: 13, fontWeight: '700'},
+  resetIcon: {fontSize: 20},
   scrim: {
     flex: 1,
     padding: 20,

@@ -100,16 +100,16 @@ export function HomeSiteFilter({
 }
 const styles = StyleSheet.create({
   filter: {
-    minHeight: 50,
+    minHeight: 44,
     borderRadius: 14,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 12,
+    padding: 8,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 14,
+    marginBottom: 6,
   },
   label: {fontSize: 12, color: colors.muted, fontWeight: '700'},
   value: {

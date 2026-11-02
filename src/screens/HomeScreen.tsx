@@ -273,7 +273,6 @@ function HomeContent({user}: {user: User}) {
         <>
           <View style={styles.header}>
             <Text style={styles.title}>Accueil</Text>
-            <Text style={styles.subtitle}>Votre supervision, en un regard</Text>
           </View>
           <View style={styles.inset}>
             <HomeSiteFilter
@@ -287,12 +286,6 @@ function HomeContent({user}: {user: User}) {
             {scopeMessage}
             {allowed && (
               <>
-                {snapshot && (
-                  <Text style={styles.sync}>
-                    Dernière synchronisation :{' '}
-                    {formatDateTime(snapshot.generatedAt)} · Maroc
-                  </Text>
-                )}
                 <View style={styles.metrics}>
                   <MetricCard
                     label="Rondes en attente"
@@ -352,9 +345,6 @@ function HomeContent({user}: {user: User}) {
                   />
                 )}
                 <Text style={styles.section}>Agents</Text>
-                <Text style={styles.caption}>
-                  Consultez l’historique pour le détail des rondes terminées.
-                </Text>
                 {byId.size > 0 && agentsQuery.isRefetchError && (
                   <Text accessibilityRole="alert" style={styles.warning}>
                     Actualisation impossible. Les dernières données chargées
@@ -468,24 +458,28 @@ const styles = StyleSheet.create({
   inset: {paddingHorizontal: 16},
   header: {
     backgroundColor: colors.navy,
-    padding: 18,
-    paddingBottom: 22,
-    marginBottom: 16,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    padding: 12,
+    paddingBottom: 12,
+    marginBottom: 8,
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
   },
-  title: {fontSize: 28, fontWeight: '800', color: colors.surface},
-  subtitle: {color: '#D9E1EC', fontSize: 13, marginTop: 5},
-  sync: {color: colors.muted, fontSize: 11, marginBottom: 12},
+  title: {fontSize: 24, fontWeight: '800', color: colors.surface},
   metrics: {flexDirection: 'row', flexWrap: 'wrap', gap: 8},
   caption: {
     color: colors.muted,
     fontSize: 11,
     lineHeight: 17,
-    marginTop: 8,
-    marginBottom: 12,
+    marginTop: 3,
+    marginBottom: 4,
   },
-  section: {fontSize: 18, fontWeight: '800', color: colors.navy, marginTop: 12},
+  section: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.navy,
+    marginTop: 6,
+    marginBottom: 4,
+  },
   activity: {
     backgroundColor: colors.surface,
     borderWidth: 1,

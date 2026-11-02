@@ -12,6 +12,7 @@ jest.mock('../src/services/patronApi', () => ({getRoundDetail: jest.fn()}));
 jest.mock('../src/services/companyOperationSettingsApi', () => ({
   getCompanyOperationSettings: jest.fn(),
   saveCompanyOperationSettings: jest.fn(),
+  saveBatterySettings: jest.fn(),
 }));
 jest.mock('../src/services/notificationPreferencesApi', () => ({
   getNotificationPreferences: jest.fn(),
@@ -26,8 +27,9 @@ jest.mock('../src/services/socketService', () => ({
 }));
 jest.mock('@react-navigation/native', () => ({
   useRoute: () => ({params: {id: 'round'}}),
+  useIsFocused: () => true,
 }));
-const mockUser: User = {
+const admin: User = {
   id: 'admin',
   companyId: 'company',
   roleType: 'COMPANY_ADMIN',
@@ -35,6 +37,7 @@ const mockUser: User = {
   email: 'admin@test.local',
   permissions: ['companies.manage'],
 };
+let mockUser: User;
 jest.mock('../src/stores/authStore', () => ({
   useAuthStore: (selector: (value: unknown) => unknown) =>
     selector({user: mockUser, refreshToken: null}),
@@ -48,18 +51,21 @@ function screen(element: React.ReactElement) {
     },
   });
   clients.push(client);
-  return {
-    ...render(
-      <QueryClientProvider client={client}>{element}</QueryClientProvider>,
-    ),
-    client,
-  };
+  const view = render(
+    <QueryClientProvider client={client}>{element}</QueryClientProvider>,
+  );
+  if (element.type === SettingsScreen) {
+    fireEvent.press(view.getByLabelText('Ouvrir Réglages société'));
+  }
+  return {...view, client};
 }
 beforeEach(() => {
   jest.clearAllMocks();
-  jest
-    .mocked(getNotificationPreferences)
-    .mockResolvedValue({scanNotificationMode: 'ALL_SCANS'});
+  mockUser = {...admin};
+  jest.mocked(getNotificationPreferences).mockResolvedValue({
+    scanNotificationMode: 'ALL_SCANS',
+    batteryAlertsEnabled: true,
+  });
   jest.mocked(getCompanyOperationSettings).mockResolvedValue({
     configured: true,
     settings: {
@@ -74,6 +80,10 @@ beforeEach(() => {
       notifyMissedRound: true,
       notifyCriticalAnomaly: true,
       notifyRoundFinished: true,
+      batteryAlertsEnabled: false,
+      batteryLowThreshold: 20,
+      batteryCriticalThreshold: 10,
+      batteryRearmThreshold: 25,
     },
   });
 });
@@ -91,11 +101,11 @@ it.each([320, 800])(
     await waitFor(() =>
       expect(view.getByLabelText('Tolérance de départ (minutes)')).toBeTruthy(),
     );
-    expect(view.getByText('Mes notifications')).toBeTruthy();
+    expect(view.getByText('Réglages société')).toBeTruthy();
     expect(view.getByText('Notifications de la société')).toBeTruthy();
     expect(view.getByText('Règles de la société')).toBeTruthy();
     expect(view.getByText('Tolérances des rondes')).toBeTruthy();
-    expect(view.getByText('Session')).toBeTruthy();
+    expect(view.queryByText('Session')).toBeNull();
     expect(
       view.getByLabelText('Tolérance des points de contrôle (minutes)'),
     ).toBeTruthy();
@@ -118,11 +128,15 @@ it('keeps the supervision draft if the personal preferences request fails', asyn
       queryKey: ['notificationPreferences'],
     });
   });
+  fireEvent.press(view.getByLabelText('Retour aux paramètres'));
+  fireEvent.press(view.getByLabelText('Ouvrir Mes notifications'));
   await waitFor(() =>
     expect(
       view.getByText('Impossible de charger les préférences personnelles.'),
     ).toBeTruthy(),
   );
+  fireEvent.press(view.getByLabelText('Retour aux paramètres'));
+  fireEvent.press(view.getByLabelText('Ouvrir Réglages société'));
   expect(view.getByLabelText('Tolérance de départ (minutes)').props.value).toBe(
     '23',
   );
@@ -151,4 +165,70 @@ it('shows the steps warning in the actual round detail without adding notificati
     expect(view.getByText('0 pas — Aucun pas détecté !')).toBeTruthy(),
   );
   expect(getRoundDetail).toHaveBeenCalledWith('round');
+});
+
+it('preserves society and battery drafts across menu returns, with independent validation and cancellation', async () => {
+  const view = screen(<SettingsScreen />);
+  await view.findByLabelText('Seuil de batterie faible (%)');
+  fireEvent.changeText(
+    view.getByLabelText('Tolérance de départ (minutes)'),
+    '33',
+  );
+  fireEvent.changeText(
+    view.getByLabelText('Seuil de batterie faible (%)'),
+    '9',
+  );
+  expect(
+    view.getByRole('button', {name: 'Enregistrer les règles batterie'}).props
+      .accessibilityState.disabled,
+  ).toBe(true);
+  fireEvent.press(view.getByLabelText('Retour aux paramètres'));
+  expect(view.queryByLabelText('Seuil de batterie faible (%)')).toBeNull();
+  fireEvent.press(view.getByLabelText('Ouvrir À propos'));
+  fireEvent.press(view.getByLabelText('Retour aux paramètres'));
+  fireEvent.press(view.getByLabelText('Ouvrir Réglages société'));
+  expect(view.getByLabelText('Seuil de batterie faible (%)').props.value).toBe(
+    '9',
+  );
+  expect(view.getByLabelText('Tolérance de départ (minutes)').props.value).toBe(
+    '33',
+  );
+  fireEvent.changeText(
+    view.getByLabelText('Seuil de batterie faible (%)'),
+    '22',
+  );
+  expect(
+    view.getByRole('button', {name: 'Enregistrer les règles batterie'}).props
+      .accessibilityState.disabled,
+  ).toBe(false);
+  fireEvent.press(view.getByText('Annuler les modifications batterie'));
+  expect(view.getByLabelText('Seuil de batterie faible (%)').props.value).toBe(
+    '20',
+  );
+  expect(view.getByLabelText('Tolérance de départ (minutes)').props.value).toBe(
+    '33',
+  );
+  fireEvent.press(view.getByText('Annuler les modifications de supervision'));
+  expect(view.getByLabelText('Tolérance de départ (minutes)').props.value).toBe(
+    '10',
+  );
+  expect(getCompanyOperationSettings).toHaveBeenCalledTimes(1);
+});
+it('keeps supervisor society/battery controls read-only and personal notifications usable', async () => {
+  mockUser = {...admin, roleType: 'SUPERVISOR'};
+  const view = screen(<SettingsScreen />);
+  await view.findByLabelText('Seuil de batterie faible (%)');
+  expect(
+    view.getByLabelText('Tolérance de départ (minutes)').props.editable,
+  ).toBe(false);
+  expect(
+    view.getByLabelText('Alertes batterie de la société').props.disabled,
+  ).toBe(true);
+  expect(view.queryByText('Enregistrer les règles batterie')).toBeNull();
+  fireEvent.press(view.getByLabelText('Retour aux paramètres'));
+  fireEvent.press(view.getByLabelText('Ouvrir Mes notifications'));
+  expect(view.getAllByRole('radio')).toHaveLength(5);
+  expect(
+    view.getByLabelText('Recevoir les alertes batterie').props.disabled,
+  ).toBe(false);
 });

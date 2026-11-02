@@ -190,7 +190,9 @@ it('shows the real context, battery and GPS, and navigates to history without in
   const view = screen();
   await view.findByText('ALPHA');
   await view.findByText('GPS · Position récente');
-  expect(view.getByText('Site de la dernière ronde')).toBeTruthy();
+  expect(
+    view.getByLabelText('Site de la dernière ronde : Site A'),
+  ).toBeTruthy();
   expect(view.getByText('84 %')).toBeTruthy();
   expect(view.queryByText(/En ligne|4G|5G|terminées\/prévues/)).toBeNull();
   fireEvent.press(view.getByText('ALPHA'));
@@ -252,7 +254,7 @@ it('handles missing battery and round information without inferring location or 
   jest.mocked(getLiveAgents).mockResolvedValue({...gps, items: []});
   const view = screen();
   await view.findByText('ALPHA');
-  expect(view.getByText('Batterie indisponible')).toBeTruthy();
+  expect(view.getByLabelText('Batterie indisponible')).toBeTruthy();
   expect(view.getByText('Aucune ronde sur cette période.')).toBeTruthy();
   expect(view.getByText('GPS · Position indisponible')).toBeTruthy();
   expect(view.queryByText('0 %')).toBeNull();
@@ -280,8 +282,10 @@ it('shows old readings per device and preserves the relationship between level a
     within(view.getByLabelText('Appareil phone-a')).getByText('84 %'),
   ).toBeTruthy();
   const old = within(view.getByLabelText('Appareil phone-b'));
-  expect(old.getByText('Dernier niveau : 8 %')).toBeTruthy();
-  expect(old.getByText('Mesure ancienne')).toBeTruthy();
+  expect(old.getByText('8 % · ancienne')).toBeTruthy();
+  expect(
+    old.getByLabelText('Dernier niveau : 8 %. Mesure ancienne'),
+  ).toBeTruthy();
 });
 it('shows old GPS independently from the agent last-round status', async () => {
   jest
@@ -322,11 +326,13 @@ it('keeps each page receipt time while paging and de-duplicates identities', asy
   await view.findByText('BETA');
   expect(
     within(view.getByLabelText('Appareil phone-a')).getByText(
-      'Mesure ancienne',
+      '84 % · ancienne',
     ),
   ).toBeTruthy();
   expect(
-    within(view.getByLabelText('Appareil phone-b')).getByText('Mesure récente'),
+    within(view.getByLabelText('Appareil phone-b')).getByLabelText(
+      '84 %. Mesure récente',
+    ),
   ).toBeTruthy();
 });
 it('does not display cached agents after a forbidden refresh', async () => {

@@ -73,27 +73,29 @@ export function RoundsListCard({
       <View style={[styles.accent, {backgroundColor: badge.color}]} />
       <View style={styles.body}>
         <View style={styles.heading}>
-          <Text style={styles.name}>{round.round.name}</Text>
+          <Text style={styles.site}>{round.site.name}</Text>
           <View style={[styles.badge, {backgroundColor: badge.background}]}>
             <Text style={[styles.badgeText, {color: badge.color}]}>
               {badge.label}
             </Text>
           </View>
         </View>
-        <Text style={styles.site}>{round.site.name}</Text>
-        <Text style={styles.agent}>
-          {round.agent?.name ?? 'Agent non assigné'}
-        </Text>
-        <Text style={styles.planned}>
-          Prévue :{' '}
-          {planned?.isValid()
-            ? planned.format('DD/MM/YYYY [à] HH:mm')
-            : 'Horaire indisponible'}
-        </Text>
+        <Text style={styles.name}>{round.round.name}</Text>
+        <View style={styles.assignment}>
+          <Text style={styles.agent}>
+            {round.agent?.name ?? 'Agent non assigné'}
+          </Text>
+          <Text style={styles.planned}>
+            Prévue :{' '}
+            {planned?.isValid()
+              ? planned.format('DD/MM/YYYY [à] HH:mm')
+              : 'Horaire indisponible'}
+          </Text>
+        </View>
         <View style={styles.progressRow}>
           <Text style={styles.progressText}>{progressText}</Text>
           <Text style={styles.detail}>
-            Voir le détail <Text accessible={false}>›</Text>
+            <Text accessible={false}>›</Text>
           </Text>
         </View>
         <View
@@ -150,45 +152,56 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 18,
-    marginBottom: 12,
+    borderRadius: 14,
+    marginBottom: 8,
     overflow: 'hidden',
   },
-  accent: {width: 4},
-  body: {flex: 1, minWidth: 0, padding: 14},
+  accent: {width: 3},
+  body: {flex: 1, minWidth: 0, padding: 10},
   heading: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'flex-start',
-    gap: 8,
+    gap: 6,
   },
   name: {
-    flexGrow: 1,
-    flexShrink: 1,
-    flexBasis: 140,
-    minWidth: 0,
-    color: colors.navy,
-    fontSize: 17,
-    fontWeight: '800',
-    lineHeight: 23,
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: 2,
   },
   badge: {
     borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     maxWidth: '100%',
   },
   badgeText: {fontSize: 12, fontWeight: '800', flexShrink: 1},
-  site: {color: colors.navy, fontSize: 14, fontWeight: '700', marginTop: 8},
-  agent: {color: colors.muted, fontSize: 13, marginTop: 4},
-  planned: {color: colors.muted, fontSize: 13, marginTop: 7},
+  site: {
+    color: colors.navy,
+    fontSize: 15,
+    fontWeight: '800',
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 135,
+    minWidth: 0,
+  },
+  assignment: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    columnGap: 8,
+    rowGap: 2,
+    marginTop: 4,
+  },
+  agent: {color: colors.navy, fontSize: 12, flexGrow: 1, flexShrink: 1},
+  planned: {color: colors.muted, fontSize: 12, flexShrink: 1},
   progressRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 14,
+    gap: 6,
+    marginTop: 6,
   },
   progressText: {
     color: colors.navy,
@@ -196,16 +209,16 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     flexShrink: 1,
   },
-  detail: {color: colors.primary, fontWeight: '700', fontSize: 12},
+  detail: {color: colors.primary, fontWeight: '700', fontSize: 18},
   track: {
-    height: 5,
+    height: 3,
     backgroundColor: '#EDF1F7',
     borderRadius: 3,
-    marginTop: 8,
+    marginTop: 4,
     overflow: 'hidden',
   },
   fill: {height: '100%', borderRadius: 3},
-  notices: {flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 9},
-  notice: {color: colors.warning, fontSize: 12, fontWeight: '600'},
-  steps: {flexDirection: 'row', flexWrap: 'wrap', marginTop: 8},
+  notices: {flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4},
+  notice: {color: colors.warning, fontSize: 11, fontWeight: '600'},
+  steps: {flexDirection: 'row', flexWrap: 'wrap', marginTop: 4},
 });

@@ -229,12 +229,14 @@ it('renders all four server counts without deriving totals from scans or list it
     {siteId: undefined},
     expect.any(AbortSignal),
   );
-  expect(view.getByText('Selon la date réelle de fin')).toBeTruthy();
-  expect(view.getAllByText('Selon la date planifiée')).toHaveLength(2);
+  expect(metric(view, "Terminées aujourd'hui").props.detail).toBe(
+    'Selon la date réelle de fin',
+  );
+  expect(metric(view, "En retard aujourd'hui").props.detail).toBe(
+    'Selon la date planifiée',
+  );
   expect(view.getByText('Situation du 20/09/2026 · Casablanca')).toBeTruthy();
-  expect(
-    view.getByText(/Dernière synchronisation : 20\/09 00:15/),
-  ).toBeTruthy();
+  expect(view.queryByText(/Dernière synchronisation/)).toBeNull();
   expect(view.getByText('ALPHA · Entrée')).toBeTruthy();
   expect(view.getByText('! Ordre non respecté')).toBeTruthy();
   expect(view.getByText('Ronde de nuit · Site A')).toBeTruthy();
@@ -296,11 +298,7 @@ it('never allocates unassigned/multi-agent occurrences or fabricates a per-agent
     expect(within(card).queryByText(/terminées|prévues|18|37/)).toBeNull();
   }
   expect(view.queryByText(/En ligne|4G|5G/)).toBeNull();
-  expect(
-    view.getByText(
-      'Consultez l’historique pour le détail des rondes terminées.',
-    ),
-  ).toBeTruthy();
+  expect(view.queryByText(/terminées\/prévues/)).toBeNull();
   fireEvent.press(view.getByText('ALPHA'));
   expect(mockNavigate).toHaveBeenCalledWith('AgentRounds', {
     agentId: 'a',
@@ -334,11 +332,13 @@ it('shows old battery/GPS and preserves separate phones instead of claiming curr
   const view = screen();
   await view.findByText('GPS · Position ancienne');
   const phoneA = within(view.getByLabelText('Appareil phone-a'));
-  expect(phoneA.getByText('Dernier niveau : 84 %')).toBeTruthy();
-  expect(phoneA.getByText('Mesure ancienne')).toBeTruthy();
+  expect(phoneA.getByText('84 % · ancienne')).toBeTruthy();
+  expect(
+    phoneA.getByLabelText('Dernier niveau : 84 %. Mesure ancienne'),
+  ).toBeTruthy();
   const phoneB = within(view.getByLabelText('Appareil phone-b'));
   expect(phoneB.getByText('10 %')).toBeTruthy();
-  expect(phoneB.getByText('Mesure récente')).toBeTruthy();
+  expect(phoneB.getByLabelText('10 %. Mesure récente')).toBeTruthy();
 });
 it('handles absent battery and GPS without inferring phone disconnection', async () => {
   jest
@@ -346,7 +346,7 @@ it('handles absent battery and GPS without inferring phone disconnection', async
     .mockResolvedValue(reply([{...agent, batteryDevices: []}]));
   jest.mocked(getLiveAgents).mockResolvedValue({...gps, items: []});
   const view = screen();
-  await view.findByText('Batterie indisponible');
+  await view.findByLabelText('Batterie indisponible');
   expect(view.getByText('GPS · Position indisponible')).toBeTruthy();
   expect(view.queryByText(/déconnecté|Hors ligne|Offline|En ligne/)).toBeNull();
 });
@@ -356,8 +356,10 @@ it('ages cached measurements using server and monotonic references even if the P
   jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2050-12-31T00:00:00Z'));
   elapsed += 31 * 60000;
   view.redraw();
-  expect(view.getByText('Mesure ancienne')).toBeTruthy();
-  expect(view.getByText('Dernier niveau : 84 %')).toBeTruthy();
+  expect(
+    view.getByLabelText('Dernier niveau : 84 %. Mesure ancienne'),
+  ).toBeTruthy();
+  expect(view.getByText('84 % · ancienne')).toBeTruthy();
   expect(view.getByText('GPS · Position indisponible')).toBeTruthy();
   expect(metric(view, "Terminées aujourd'hui").props.value).toBe(37);
 });
@@ -446,8 +448,10 @@ it('drops previous supervisor scope immediately when assignments change', async 
       [sites[1]],
     );
   });
-  await waitFor(() => expect(view.queryByText('37')).toBeNull());
-  expect(view.queryByText('ALPHA')).toBeNull();
+  await waitFor(() => {
+    expect(view.queryByText('37')).toBeNull();
+    expect(view.queryByText('ALPHA')).toBeNull();
+  });
   act(() => other.resolve({...dashboard, liveActivity: []}));
 });
 it('removes a revoked snapshot and does not resurrect it after a subsequent network error', async () => {
@@ -492,7 +496,7 @@ it('keeps per-page battery receipt timestamps and guards duplicate pagination re
   });
   await view.findByText('BETA');
   const cards = view.UNSAFE_getAllByType(HomeAgentCard);
-  expect(within(cards[0]).getByText('Dernier niveau : 84 %')).toBeTruthy();
+  expect(within(cards[0]).getByText('84 % · ancienne')).toBeTruthy();
   expect(within(cards[1]).getByText('84 %')).toBeTruthy();
   expect(getAgents).toHaveBeenCalledTimes(2);
 });

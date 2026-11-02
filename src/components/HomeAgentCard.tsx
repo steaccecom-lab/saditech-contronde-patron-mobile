@@ -2,14 +2,8 @@ import React from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import type {AgentItem} from '../types/api';
 import type {GpsIndicator} from '../utils/agentGpsPresentation';
-import {BatteryDevices} from './BatteryDevices';
+import {AgentTelemetry} from './AgentTelemetry';
 import {colors} from '../theme/colors';
-
-const gpsLabel = {
-  RECENT: 'Position récente',
-  OLD: 'Position ancienne',
-  UNAVAILABLE: 'Position indisponible',
-};
 export function HomeAgentCard({
   agent,
   receivedAt,
@@ -40,87 +34,40 @@ export function HomeAgentCard({
           ›
         </Text>
       </View>
-      <View style={styles.telemetry}>
-        <View accessible={false} style={styles.battery}>
-          <View style={styles.batteryFill} />
-          <View style={styles.batteryTip} />
-        </View>
-        <View style={styles.measure}>
-          <BatteryDevices
-            compact
-            devices={agent.batteryDevices}
-            receivedAt={receivedAt}
-            nowElapsed={nowElapsed}
-          />
-        </View>
-      </View>
-      <View style={styles.gpsRow}>
-        <Text accessible={false} style={styles.gps}>
-          ⌖
-        </Text>
-        <Text style={styles.gps}>GPS · {gpsLabel[gps]}</Text>
-      </View>
-      <Text style={styles.history}>Historique des rondes ›</Text>
+      <AgentTelemetry
+        devices={agent.batteryDevices}
+        receivedAt={receivedAt}
+        nowElapsed={nowElapsed}
+        gps={gps}
+      />
     </TouchableOpacity>
   );
 }
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    padding: 12,
-    marginBottom: 10,
+    padding: 10,
+    marginBottom: 8,
   },
-  row: {flexDirection: 'row', alignItems: 'center', gap: 10},
+  row: {flexDirection: 'row', alignItems: 'center', gap: 7},
   avatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 8,
     backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  initial: {fontWeight: '800', color: colors.navy},
+  initial: {fontWeight: '800', color: colors.navy, fontSize: 12},
   name: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '800',
     color: colors.navy,
     flex: 1,
     minWidth: 0,
   },
-  chevron: {fontSize: 22, color: colors.primary},
-  telemetry: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 7,
-    alignItems: 'center',
-  },
-  battery: {
-    width: 17,
-    height: 10,
-    borderWidth: 1,
-    borderColor: colors.muted,
-    borderRadius: 2,
-    padding: 2,
-  },
-  batteryFill: {flex: 1, width: 5, backgroundColor: colors.muted},
-  batteryTip: {
-    position: 'absolute',
-    right: -3,
-    top: 2,
-    width: 2,
-    height: 4,
-    backgroundColor: colors.muted,
-  },
-  measure: {flex: 1},
-  gps: {fontSize: 12, color: colors.muted, marginTop: 8, lineHeight: 18},
-  gpsRow: {flexDirection: 'row', gap: 5},
-  history: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.primary,
-    marginTop: 8,
-  },
+  chevron: {fontSize: 20, color: colors.primary},
 });

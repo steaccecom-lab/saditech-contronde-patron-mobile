@@ -14,16 +14,25 @@ export function MetricCard({
   detail?: string;
 }) {
   return (
-    <View style={[styles.card, {borderTopColor: colors[tone]}]}>
-      <Text
-        style={[
-          styles.value,
-          {color: value === null ? colors.muted : colors[tone]},
-        ]}>
-        {value ?? '—'}
-      </Text>
+    <View
+      accessible
+      accessibilityLabel={`${label} : ${value ?? 'indisponible'}`}
+      accessibilityHint={detail}
+      style={[styles.card, {borderTopColor: colors[tone]}]}>
+      <View style={styles.valueRow}>
+        <Text
+          style={[
+            styles.value,
+            {color: value === null ? colors.muted : colors[tone]},
+          ]}>
+          {value ?? '—'}
+        </Text>
+        <Text accessible={false} style={[styles.icon, {color: colors[tone]}]}>
+          {{info: '◷', success: '✓', warning: '!', danger: '×'}[tone]}
+        </Text>
+      </View>
       <Text style={styles.label}>{label}</Text>
-      {detail && <Text style={styles.detail}>{detail}</Text>}
+      {value === null && detail && <Text style={styles.detail}>{detail}</Text>}
     </View>
   );
 }
@@ -33,23 +42,30 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 12,
     flexGrow: 1,
     flexBasis: '46%',
     minWidth: 110,
-    padding: 14,
-    borderTopWidth: 3,
-    minHeight: 112,
+    padding: 9,
+    borderTopWidth: 2,
+    minHeight: 76,
   },
   value: {
-    fontSize: 28,
+    fontSize: 23,
     fontWeight: '800',
   },
   label: {
     color: colors.text,
     fontSize: 12,
-    marginTop: 4,
+    marginTop: 2,
     fontWeight: '700',
   },
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
+  icon: {fontSize: 17, fontWeight: '700'},
   detail: {color: colors.muted, fontSize: 10, marginTop: 5, lineHeight: 14},
 });
