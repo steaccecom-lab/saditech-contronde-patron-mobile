@@ -1,5 +1,5 @@
 import {BatterySupervisionSettings} from './BatterySupervisionSettings';
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
@@ -122,6 +122,13 @@ export function CompanySupervisionSettings({user}: {user: User}) {
     user.roleType === 'COMPANY_ADMIN' &&
     user.permissions.includes('companies.manage');
   const client = useQueryClient();
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const queryKey = ['companyOperationSettings', companyId, user.id];
   const query = useQuery({
     queryKey,
@@ -144,6 +151,10 @@ export function CompanySupervisionSettings({user}: {user: User}) {
       settings: CompanyOperationSettings;
     }) => saveCompanyOperationSettings(companyId!, section, settings),
     onSuccess: (data: CompanyOperationSettingsResponse, variables) => {
+      // A completed request must not repopulate private data after its owner left.
+      if (!mounted.current) {
+        return;
+      }
       client.setQueryData(queryKey, data);
       if (variables.section === 'rules') {
         setRules(null);

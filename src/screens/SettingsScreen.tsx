@@ -18,9 +18,6 @@ import {
   updateNotificationPreferences,
 } from '../services/notificationPreferencesApi';
 import {logout} from '../services/authApi';
-import {revokeCurrentDevice} from '../services/mobileDevicesApi';
-import {disconnectSocket} from '../services/socketService';
-import {resetEventDedup} from '../services/eventDedup';
 import {useAuthStore} from '../stores/authStore';
 import type {ScanNotificationMode, User} from '../types/api';
 import {EmptyView, ErrorView, LoadingView} from '../components/StateViews';
@@ -165,17 +162,13 @@ function SettingsContent({user}: {user: User}) {
     },
   });
   const doLogout = async () => {
-    if (loggingOut) {
+    if (loggingOut || !mounted.current) {
       return;
     }
     setLoggingOut(true);
     try {
-      await revokeCurrentDevice().catch(() => undefined);
-      await logout(refreshToken);
+      await logout(refreshToken, user);
       mounted.current = false;
-      disconnectSocket();
-      resetEventDedup();
-      queryClient.clear();
     } catch {
       Alert.alert('Déconnexion impossible', 'Réessayez de vous déconnecter.');
     } finally {

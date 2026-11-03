@@ -56,7 +56,9 @@ describe('navigation superviseur', () => {
     ]) {
       expect(firebase).toContain(token);
     }
-    expect(mobileDevices).toContain("http.post('/mobile-devices/register'");
+    expect(mobileDevices).toMatch(
+      /http\.post\(\s*'\/mobile-devices\/register'/,
+    );
     expect(mobileDevices).toContain("http.delete('/mobile-devices/current'");
     expect(navigator).toContain("navigationRef.navigate('RoundDetail'");
   });
@@ -88,10 +90,11 @@ describe('navigation superviseur', () => {
   });
 
   it('purge le cache privé au changement ou à la perte de session', () => {
-    expect(authApi.match(/clearPrivateQueryCache\(\)/g)).toHaveLength(3);
-    expect(
-      authApi.indexOf('updateAccessToken(response.data.accessToken'),
-    ).toBeLessThan(authApi.indexOf('const me = await currentUser()'));
+    expect(authApi).toContain('clearPrivateQueryCache()');
+    expect(authApi).toContain('invalidateSession(owner)');
+    expect(authApi.indexOf('await saveTokens(')).toBeLessThan(
+      authApi.indexOf('const me = await currentUser()'),
+    );
     expect(http).toContain('clearPrivateQueryCache()');
     expect(navigator).toContain("queryKey: ['rounds']");
     expect(authStore).toContain('pendingRoundId: null');

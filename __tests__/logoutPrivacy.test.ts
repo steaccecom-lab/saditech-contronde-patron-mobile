@@ -5,7 +5,16 @@ import {useAuthStore} from '../src/stores/authStore';
 import {registerPrivateQueryCacheClearer} from '../src/privateQueryCache';
 import {http} from '../src/services/http';
 import {revokeCurrentDevice} from '../src/services/mobileDevicesApi';
-jest.mock('../src/services/http', () => ({http: {post: jest.fn()}}));
+import {disconnectSocket} from '../src/services/socketService';
+import {resetEventDedup} from '../src/services/eventDedup';
+jest.mock('../src/services/socketService', () => ({
+  disconnectSocket: jest.fn(),
+}));
+jest.mock('../src/services/eventDedup', () => ({resetEventDedup: jest.fn()}));
+jest.mock('../src/services/http', () => ({
+  ...jest.requireActual('../src/services/http'),
+  http: {post: jest.fn()},
+}));
 jest.mock('../src/services/mobileDevicesApi', () => ({
   revokeCurrentDevice: jest.fn(),
 }));
@@ -21,16 +30,14 @@ it.each([false, true])(
     client.setQueryData(['notificationPreferences', 'c', 'u'], {
       scanNotificationMode: 'ALL_SCANS',
     });
-    useAuthStore
-      .getState()
-      .setSession('fixture-access', 'fixture-refresh', {
-        id: 'u',
-        companyId: 'c',
-        roleType: 'SUPERVISOR',
-        fullName: 'S',
-        email: 's@example.test',
-        permissions: [],
-      });
+    useAuthStore.getState().setSession('fixture-access', 'fixture-refresh', {
+      id: 'u',
+      companyId: 'c',
+      roleType: 'SUPERVISOR',
+      fullName: 'S',
+      email: 's@example.test',
+      permissions: [],
+    });
     useAuthStore.getState().setPendingRoundId('private-round');
     if (offline) {
       jest.mocked(http.post).mockRejectedValue(new Error('offline'));
@@ -41,9 +48,15 @@ it.each([false, true])(
     }
     await logout('fixture-refresh');
     expect(revokeCurrentDevice).toHaveBeenCalledTimes(1);
-    expect(http.post).toHaveBeenCalledWith('/auth/logout', {
-      refreshToken: 'fixture-refresh',
-    });
+    expect(disconnectSocket).toHaveBeenCalledTimes(1);
+    expect(resetEventDedup).toHaveBeenCalledTimes(1);
+    expect(http.post).toHaveBeenCalledWith(
+      '/auth/logout',
+      {
+        refreshToken: 'fixture-refresh',
+      },
+      expect.objectContaining({_sessionCleanup: true, _skipRefresh: true}),
+    );
     expect(Keychain.resetGenericPassword).toHaveBeenCalledWith({
       service: 'contronde-patron.tokens',
     });

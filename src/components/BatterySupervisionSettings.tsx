@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   StyleSheet,
   Switch,
@@ -64,10 +64,20 @@ export function BatterySupervisionSettings({
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saved, setSaved] = useState(false);
   const client = useQueryClient();
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const mutation = useMutation({
     mutationFn: (values: BatterySettings) =>
       saveBatterySettings(companyId, values),
     onSuccess: result => {
+      if (!mounted.current) {
+        return;
+      }
       client.setQueryData(queryKey, result);
       setDraft(null);
       setSaved(true);

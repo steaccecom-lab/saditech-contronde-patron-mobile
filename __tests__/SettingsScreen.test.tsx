@@ -192,9 +192,6 @@ it('retains logout confirmation and only logs out after confirmation', async () 
   const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   const view = screen('session');
   expect(view.getByText('Session')).toBeTruthy();
-  view.client.setQueryData(['dashboard', 'private-snapshot'], {
-    privateData: true,
-  });
   fireEvent.press(view.getByRole('button', {name: 'Se déconnecter'}));
   expect(logout).not.toHaveBeenCalled();
   const buttons = alert.mock.calls[0][2]!;
@@ -202,12 +199,12 @@ it('retains logout confirmation and only logs out after confirmation', async () 
   await act(async () => {
     await buttons[1].onPress!();
   });
-  expect(revokeCurrentDevice).toHaveBeenCalledTimes(1);
+  // The real logout service owns revocation; the screen must not perform it twice.
+  expect(revokeCurrentDevice).not.toHaveBeenCalled();
   expect(logout).toHaveBeenCalledTimes(1);
-  expect(disconnectSocket).toHaveBeenCalledTimes(1);
-  expect(
-    view.client.getQueryCache().findAll({queryKey: ['dashboard']}),
-  ).toHaveLength(0);
+  expect(logout).toHaveBeenCalledWith('test-refresh', admin);
+  // Socket teardown and cache purge belong to the real logout service (logoutPrivacy).
+  expect(disconnectSocket).not.toHaveBeenCalled();
   alert.mockRestore();
 });
 
@@ -357,4 +354,33 @@ it('handles Android back only inside a focused settings subpage', () => {
   mockFocused = false;
   view.redraw();
   expect(remove.mock.calls.length).toBeGreaterThan(count);
+});
+
+it('does not clear the replacement account cache when an old logout finishes', async () => {
+  let finish!: () => void;
+  jest.mocked(logout).mockReturnValueOnce(
+    new Promise<void>(resolve => {
+      finish = resolve;
+    }),
+  );
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  const view = screen('session');
+  fireEvent.press(view.getByRole('button', {name: 'Se déconnecter'}));
+  let exit: unknown;
+  act(() => {
+    exit = alert.mock.calls[0][2]![1].onPress!();
+  });
+  expect(disconnectSocket).not.toHaveBeenCalled();
+  view.changeUser({...admin, id: 'new-account', companyId: 'new-company'});
+  // Keep this unobserved cache entry alive so GC cannot imitate a stale purge.
+  view.client.setQueryDefaults(['dashboard'], {gcTime: Infinity});
+  view.client.setQueryData(['dashboard', 'new-company'], {privateB: true});
+  await act(async () => {
+    finish();
+    await exit;
+  });
+  expect(view.client.getQueryData(['dashboard', 'new-company'])).toEqual({
+    privateB: true,
+  });
+  expect(disconnectSocket).not.toHaveBeenCalled();
 });
